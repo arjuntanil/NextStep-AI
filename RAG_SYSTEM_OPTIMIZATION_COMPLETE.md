@@ -175,3 +175,18 @@ jd_only = job_skills - resume_skills
 **Date:** October 22, 2025  
 **Tested:** ✅ Verified with real resume/JD data  
 **Ready for Production:** ✅ Yes
+
+
+cd E:\NextStepAI
+powershell -ExecutionPolicy Bypass -File "START_OLLAMA_CPU_MODE.ps1"
+
+
+
+
+cd E:\NextStepAI
+.\RESTART_BACKEND.bat
+
+
+
+cd E:\NextStepAI
+.\START_FRONTEND.bat
