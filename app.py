@@ -3,6 +3,7 @@ import streamlit as st
 import requests
 import json
 import io
+import time
 from docx import Document
 from docx.shared import Inches
 import graphviz 
@@ -17,6 +18,10 @@ HISTORY_ANALYSES_URL = f"{API_BASE_URL}/history/analyses"
 HISTORY_QUERIES_URL = f"{API_BASE_URL}/history/queries"
 USER_ME_URL = f"{API_BASE_URL}/users/me"
 LOGIN_URL = f"{API_BASE_URL}/auth/login"
+RAG_COACH_QUERY_URL = f"{API_BASE_URL}/rag-coach/query"
+RAG_COACH_UPLOAD_URL = f"{API_BASE_URL}/rag-coach/upload"
+RAG_COACH_STATUS_URL = f"{API_BASE_URL}/rag-coach/status"
+BACKEND_URL = API_BASE_URL
 
 st.set_page_config(page_title="NextStepAI - Career Navigator", layout="wide")
 
@@ -52,16 +57,21 @@ st.title("✨ NextStepAI: Your Career Navigator")
 
 # --- Conditional UI based on Login State ---
 if st.session_state.token:
-    st.sidebar.success(f"Logged in as {st.session_state.user_info.get('email', 'user')}")
-    if st.sidebar.button("Logout"):
+    st.sidebar.success(f"✅ Logged in as {st.session_state.user_info.get('email', 'user')}")
+    if st.sidebar.button("🚪 Logout"):
         st.session_state.token = None; st.session_state.user_info = None; st.query_params.clear()
         st.rerun()
     # MODIFICATION: Removed "ATS Resume Builder" from tabs list
-    tabs = st.tabs(["📄 Resume Analyzer", "💬 AI Career Advisor", "🗂️ My History"])
+    tabs = st.tabs(["📄 Resume Analyzer", "💬 AI Career Advisor", "🧑‍💼 RAG Coach", "🗂️ My History"])
 else:
-    st.sidebar.info("Login to save and view your history.")
+    st.sidebar.info("🔐 **Login to save and view your history**")
+    if st.sidebar.button("🔑 Login with Google", type="primary"):
+        # Redirect to backend OAuth endpoint
+        st.markdown(f'<meta http-equiv="refresh" content="0;url={LOGIN_URL}">', unsafe_allow_html=True)
+    st.sidebar.markdown("---")
+    st.sidebar.caption("Without login, your analysis results won't be saved.")
     # MODIFICATION: Removed "ATS Resume Builder" from tabs list
-    tabs = st.tabs(["📄 Resume Analyzer", "💬 AI Career Advisor"])
+    tabs = st.tabs(["📄 Resume Analyzer", "💬 AI Career Advisor", "🧑‍💼 RAG Coach"])
 
 headers = {"Authorization": f"Bearer {st.session_state.token}"} if st.session_state.token else {}
 
@@ -189,24 +199,27 @@ with tabs[1]:
     with st.expander("⚙️ Advanced Options"):
         col1, col2 = st.columns(2)
         with col1:
-            use_finetuned = st.checkbox("Use Fine-tuned Model", value=True, help="Use the specialized career advisor model")
-            max_length = st.slider("Response Length", 100, 300, 200)
+            use_finetuned = st.checkbox("Use Fine-tuned Model", value=True, help="Ultra-fast specialized model (5-15 seconds)")
+            max_length = st.slider("Response Length", 50, 120, 80, help="⚡ 50-60=5-8s | 70-80=8-12s | 100-120=15-20s")
         with col2:
-            temperature = st.slider("Creativity", 0.1, 1.0, 0.7, help="Higher values = more creative responses")
+            temperature = st.slider("Creativity", 0.1, 1.0, 0.5, help="Lower = much faster (recommended: 0.5)")
     
     user_query = st.text_input("💬 Your Career Question:", placeholder="Example: Tell me about a career in Data Science", key="unified_query")
     
     if user_query:
-        with st.spinner("🧠 Generating personalized career advice..."):
+        # Show different spinner messages based on model selection
+        spinner_msg = "⚡ EXTREME SPEED: Generating in 5-15 seconds..." if use_finetuned else "🧠 Generating career advice with RAG system..."
+        
+        with st.spinner(spinner_msg):
             try:
                 if use_finetuned:
                     # Use the dedicated fine-tuned endpoint
                     payload = {
                         "text": user_query,
                         "max_length": max_length,
-                        "temperature": temperature
+                        "temperature": 0.5  # Force low temp for speed
                     }
-                    response = requests.post(CAREER_ADVICE_AI_URL, json=payload, timeout=90)
+                    response = requests.post(CAREER_ADVICE_AI_URL, json=payload, timeout=45)
                     
                     if response.status_code == 200:
                         data = response.json()
@@ -292,36 +305,211 @@ with tabs[1]:
                 st.markdown("- Check your internet connection")
                 st.markdown("- Try refreshing the page")
 
-# --- Tab 3: My History (Index updated from 3 to 2) ---
-if len(tabs) == 3: 
-    with tabs[2]:
-        st.header("Your Saved History")
+# --- Tab 3: RAG Coach ---
+with tabs[2]:
+    st.header("🧑‍💼 RAG Coach - PDF-Powered Career Guidance")
+    st.markdown("Upload your resume and job description PDFs to get personalized career advice using RAG (Retrieval-Augmented Generation) with Ollama Mistral 7B.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        resume_pdf = st.file_uploader("📄 Upload Your Resume (PDF)", type=["pdf"], key="rag_resume")
+    with col2:
+        job_desc_pdf = st.file_uploader("📋 Upload Job Description (PDF)", type=["pdf"], key="rag_job_desc")
+    
+    # Upload PDFs if provided
+    if resume_pdf or job_desc_pdf:
+        if st.button("📤 Upload & Analyze Documents"):
+            with st.spinner("Uploading documents and analyzing..."):
+                files_to_upload = []
+                if resume_pdf:
+                    files_to_upload.append(("files", (resume_pdf.name, resume_pdf.getvalue(), "application/pdf")))
+                if job_desc_pdf:
+                    files_to_upload.append(("files", (job_desc_pdf.name, job_desc_pdf.getvalue(), "application/pdf")))
+                
+                try:
+                    # Upload PDFs with automatic processing enabled
+                    upload_response = requests.post(
+                        RAG_COACH_UPLOAD_URL, 
+                        files=files_to_upload,
+                        data={"process_resume_job": "true"},
+                        timeout=30
+                    )
+                    if upload_response.status_code == 200:
+                        upload_data = upload_response.json()
+                        st.success(f"✅ {upload_data['message']}")
+                        uploaded_files = upload_data.get('files_uploaded', [])
+                        st.info(f"📄 Uploaded: {', '.join(uploaded_files)}")
+                        
+                        # Show processing status
+                        status_placeholder = st.empty()
+                        result_placeholder = st.empty()
+                        
+                        # Poll for processing completion
+                        max_wait = 120  # 2 minutes max
+                        poll_interval = 2
+                        elapsed = 0
+                        
+                        while elapsed < max_wait:
+                            try:
+                                status_response = requests.get(RAG_COACH_STATUS_URL, timeout=10)
+                                if status_response.status_code == 200:
+                                    status = status_response.json()
+                                    
+                                    # Check if automatic processing is complete
+                                    if status.get("processing_ready", False):
+                                        status_placeholder.success("✅ Analysis Complete!")
+                                        
+                                        # Fetch the processed result
+                                        result_response = requests.get(f"{BACKEND_URL}/rag-coach/processed-result", timeout=10)
+                                        if result_response.status_code == 200:
+                                            processed_data = result_response.json()
+                                            formatted_output = processed_data.get("result", {}).get("formatted", "")
+                                            
+                                            # Display the automatic analysis
+                                            result_placeholder.markdown("### 🎯 Resume Enhancement Suggestions")
+                                            result_placeholder.markdown(formatted_output)
+                                            
+                                            # Mark that documents are uploaded and processed
+                                            st.session_state["rag_documents_uploaded"] = True
+                                        break
+                                    
+                                    # Show current status
+                                    if status.get("processing", False):
+                                        status_placeholder.info("⏳ Analyzing your documents... (30-60 seconds)")
+                                    elif status.get("vector_store_ready", False):
+                                        status_placeholder.info("📚 Building knowledge base...")
+                                    else:
+                                        status_placeholder.info("🔄 Preparing analysis...")
+                                    
+                            except requests.exceptions.RequestException:
+                                pass
+                            
+                            time.sleep(poll_interval)
+                            elapsed += poll_interval
+                        
+                        if elapsed >= max_wait:
+                            status_placeholder.warning("⏱️ Analysis is taking longer than expected. You can still ask questions below.")
+                            st.session_state["rag_documents_uploaded"] = True
+                    else:
+                        error_detail = upload_response.json().get('detail', 'Unknown error')
+                        st.error(f"Upload failed: {error_detail}")
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Connection Error: {e}")
+    
+    # Only show query section if documents have been uploaded and processed
+    if st.session_state.get("rag_documents_uploaded", False):
+        st.markdown("---")
+        st.subheader("💬 Ask Follow-up Questions")
+        rag_query = st.text_area(
+            "Have more questions? Ask away:",
+            placeholder="Example: How can I better highlight my leadership experience?",
+            height=100,
+            key="rag_query_input"
+        )
+        
+        if st.button("🚀 Get Answer") and rag_query:
+            with st.spinner("🔍 Searching documents and generating answer..."):
+                try:
+                    query_payload = {"question": rag_query}
+                    query_response = requests.post(RAG_COACH_QUERY_URL, json=query_payload, timeout=90)
+                    
+                    if query_response.status_code == 200:
+                        result = query_response.json()
+                        
+                        # Display answer
+                        st.success("📝 RAG Coach Answer:")
+                        st.markdown(result.get("answer", "No answer generated"))
+                        
+                        # Display retrieved context
+                        context_chunks = result.get("context_chunks", [])
+                        sources = result.get("sources", [])
+                        
+                        if context_chunks:
+                            with st.expander(f"📚 Retrieved Context ({len(context_chunks)} chunks from {len(sources)} sources)"):
+                                for idx, chunk in enumerate(context_chunks, 1):
+                                    st.markdown(f"**Chunk {idx}** (from `{chunk.get('source', 'Unknown')}`)")
+                                    st.text(chunk.get('content', '')[:500] + "..." if len(chunk.get('content', '')) > 500 else chunk.get('content', ''))
+                                    st.markdown("---")
+                        else:
+                            st.info("No source documents retrieved")
+                        
+                        # Display source files
+                        if sources:
+                            st.caption(f"📄 Sources: {', '.join(sources)}")
+                        
+                    else:
+                        error_detail = query_response.json().get('detail', 'Unknown error')
+                        st.error(f"Query failed: {error_detail}")
+                        if "ollama" in error_detail.lower() and "mistral" in error_detail.lower():
+                            st.warning("⚠️ Ollama Mistral model not found. Please run:")
+                            st.code("ollama pull mistral:7b-q4", language="bash")
+                        elif "vector store" in error_detail.lower() or "no documents" in error_detail.lower():
+                            st.info("💡 Tip: Upload some PDFs first to build the knowledge base")
+                            
+                except requests.exceptions.RequestException as e:
+                    st.error(f"Connection Error: {e}")
+                    st.markdown("**Troubleshooting:**")
+                    st.markdown("- Ensure Ollama is installed and running")
+                    st.markdown("- Run: `ollama pull mistral:7b-q4`")
+                    st.markdown("- Check if backend is running on port 8000")
+
+# --- Tab 4: My History (Index updated from 2 to 3) ---
+if len(tabs) == 4:
+    with tabs[3]:
+        st.header("📚 Your Saved History")
         if st.button("🔄 Refresh History"):
             try:
                 analyses_res = requests.get(HISTORY_ANALYSES_URL, headers=headers)
                 queries_res = requests.get(HISTORY_QUERIES_URL, headers=headers)
+                rag_queries_res = requests.get(f"{API_BASE_URL}/history/rag-queries", headers=headers)
+                
                 if analyses_res.status_code == 200 and queries_res.status_code == 200:
-                    st.session_state.history = {"analyses": analyses_res.json(), "queries": queries_res.json()}
-                    st.success("History updated!")
+                    st.session_state.history = {
+                        "analyses": analyses_res.json(), 
+                        "queries": queries_res.json(),
+                        "rag_queries": rag_queries_res.json() if rag_queries_res.status_code == 200 else []
+                    }
+                    st.success("✅ History updated!")
                 else:
                     st.error("Could not fetch history. Your session may have expired.")
             except Exception as e:
                 st.error(f"Error fetching history: {e}")
         
         if st.session_state.history:
-            st.subheader("Past Resume Analyses")
+            # Resume Analyses History
+            st.subheader("📄 Past Resume Analyses")
             analyses = st.session_state.history.get("analyses", [])
             if analyses:
                 for item in analyses:
                     with st.expander(f"Analysis for **{item['recommended_job_title']}** (Match: {item['match_percentage']}%)"):
                         skills = json.loads(item.get('skills_to_add', '[]')) # Use .get() for safety
-                        st.write("Skills to add:", ", ".join(f"`{s}`" for s in skills))
+                        st.write("Skills to add:", ", ".join(f"`{s}`" for s in skills) if skills else "No skills needed!")
             else:
-                st.write("No resume analyses found.")
-            st.subheader("Past Career Queries")
+                st.info("No resume analyses found.")
+            
+            st.markdown("---")
+            
+            # Career Advisor Queries History
+            st.subheader("💬 Past AI Career Advisor Queries")
             queries = st.session_state.history.get("queries", [])
             if queries:
                 for item in queries:
                     st.info(f"You asked about **'{item['user_query_text']}'** ➡️ Matched to **{item['matched_job_group']}**.")
             else:
-                st.write("No career queries found.")
+                st.info("No career queries found.")
+            
+            st.markdown("---")
+            
+            # RAG Coach Queries History
+            st.subheader("🧑‍💼 Past RAG Coach Interactions")
+            rag_queries = st.session_state.history.get("rag_queries", [])
+            if rag_queries:
+                for item in rag_queries:
+                    with st.expander(f"Q: {item['question'][:80]}..." if len(item['question']) > 80 else f"Q: {item['question']}"):
+                        st.markdown("**Answer:**")
+                        st.write(item['answer'])
+                        sources = json.loads(item.get('sources', '[]'))
+                        if sources:
+                            st.caption(f"📄 Sources: {', '.join(sources)}")
+            else:
+                st.info("No RAG Coach queries found.")

@@ -7,6 +7,7 @@
 ### Key Features:
 * **AI-Powered Resume Analysis** - Upload PDF/DOCX resumes for intelligent skill extraction, job matching, and ATS optimization feedback
 * **Fine-tuned Career Advisor (Ai_career_Advisor)** - Custom-trained GPT-2 model specifically fine-tuned on career guidance data for accurate, context-aware career advice
+* **RAG Coach with Ollama** - NEW! Upload your resume and job description PDFs for personalized career guidance using Mistral 7B Q4 with full source attribution
 * **Live Job Postings** - Real-time job scraping from LinkedIn with intelligent fallback mechanisms
 * **Skill Gap Analysis** - Quantified skill matching with personalized learning paths and YouTube tutorial links
 * **RAG-Powered Q&A** - Semantic search over curated career guides using FAISS vector stores
@@ -51,12 +52,16 @@ NextStepAI addresses these problems by providing a data-driven solution that off
 * **Intelligent Retry Logic:** Comprehensive error handling with detailed logging for debugging scraping issues
 * **Contextual Job Matching:** Semantic similarity matching to find relevant job postings for user queries
 
-### 3.4 RAG-Powered Career Guidance
-* **FAISS Vector Search:** Semantic similarity search over career guides using all-MiniLM-L6-v2 embeddings
-* **Two Knowledge Bases:** Separate indices for career guides (`guides_index`) and job postings (`jobs_index`)
-* **Hybrid Generation:** Combines retrieved context with LLM generation for factually grounded, comprehensive answers
 
-### 3.5 User Management & Security
+### 3.5 RAG Coach (Ollama-Powered PDF Guidance)
+* **Local LLM with Ollama:** Uses Mistral 7B Q4 quantized model for privacy-preserving, offline career coaching
+* **PDF Upload & Processing:** Upload resume PDFs and job description PDFs for personalized analysis
+* **Dynamic Vector Store:** User-uploaded documents are indexed in real-time with career guides for comprehensive retrieval
+* **Source Attribution:** Every answer shows retrieved source documents for transparency and fact-checking
+* **Graceful Model Handling:** Automatic detection of missing Ollama models with clear installation instructions
+* **Personalized Guidance:** Answer questions based on YOUR specific resume and target job description
+
+### 3.6 User Management & Security
 * **Google OAuth SSO:** Secure authentication using environment-based credentials (no hardcoded secrets)
 * **JWT Tokens:** Stateless session management with configurable secret keys
 * **History Tracking:** Persistent storage of resume analyses and career queries per user
@@ -112,7 +117,16 @@ The application employs a modern, production-ready, decoupled architecture:
 * **Retrieval:** Top-k similarity search with configurable k parameter
 * **Generation:** Langchain chains combining retrieval + LLM generation
 
-#### 5. Web Scraping
+#### 5. RAG Coach (Ollama-Powered PDF Guidance)
+* **Local LLM:** Ollama with Mistral 7B Q4 quantized model for privacy-preserving, offline inference
+* **PDF Loading:** PyPDFLoader for extracting text from resume PDFs and job description PDFs
+* **Dynamic Knowledge Base:** User-uploaded PDFs + career guides indexed in real-time
+* **Vector Store:** Dedicated FAISS index with HuggingFaceEmbeddings for RAG Coach documents
+* **Retrieval Chain:** LangChain RetrievalQA with source document tracking
+* **Graceful Model Detection:** Automatic detection of missing Ollama models with installation instructions
+* **Use Case:** Personalized career advice based on user's actual resume content and specific job descriptions
+
+#### 6. Web Scraping
 * **Library:** Requests + BeautifulSoup4 for HTML parsing
 * **Target:** LinkedIn job search pages with fallback CSS selectors
 * **Headers:** Comprehensive browser headers to mimic real user agents
@@ -205,6 +219,7 @@ This feature provides expert-level answers to user questions about career paths 
 * Python 3.10+ (tested with 3.10)
 * Git
 * Google API Key for Gemini (get from [Google AI Studio](https://makersuite.google.com/app/apikey))
+* **Ollama** - For RAG Coach feature (download from [ollama.ai](https://ollama.ai))
 * (Optional) Google OAuth credentials for SSO authentication
 * (Optional) GPU with CUDA for faster model inference
 
@@ -275,7 +290,17 @@ This creates:
 * `guides_index/` (FAISS index for career guides)
 * `jobs_index/` (FAISS index for job postings)
 
-#### 5.3 Fine-tune Career Advisor Model (Optional)
+#### 5.3 Install Ollama and Pull Mistral Model (For RAG Coach)
+```bash
+# Download and install Ollama from https://ollama.ai
+
+# After installation, pull the Mistral 7B Q4 model:
+ollama pull mistral:7b-q4
+```
+
+The RAG Coach feature will automatically detect if the model is missing and show installation instructions in the UI.
+
+#### 5.4 Fine-tune Career Advisor Model (Optional)
 **Option A: Train Locally** (requires 4GB+ RAM, 10-30 minutes):
 ```bash
 python production_finetuning_optimized.py
@@ -337,6 +362,18 @@ streamlit run app.py
 * `GET /model-status` - Check status of all loaded models
 * `GET /model-load-status` - Check fine-tuned model loading progress
 * `POST /reload-model?background=true` - Trigger model load/reload
+
+### RAG Coach (NEW!)
+* `POST /rag-coach/upload` - Upload PDF documents (resume, job descriptions)
+  - **Input**: Multipart form data with PDF files
+  - **Output**: Confirmation with number of documents added to vector store
+
+* `POST /rag-coach/query` - Ask questions based on uploaded PDFs
+  - **Input**: `{"question": "What skills should I develop based on my resume?"}`
+  - **Output**: AI-generated answer with source document attribution
+
+* `POST /rag-coach/build-index` - Rebuild RAG Coach vector store from scratch
+  - **Output**: Confirmation of index rebuild with document count
 
 ### User History
 * `GET /history/analyses` - Get user's past resume analyses (requires auth)
@@ -541,3 +578,30 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 * **`HOW_TO_TEST_MODEL.md`** - Instructions for testing fine-tuned models locally and in Colab
 * **`PRODUCTION_LLM_DEPLOYMENT.md`** - Deployment guide for production environments
 * **`GPU_OPTIMIZED_TRAINING_GUIDE.md`** - GPU-specific training optimizations and configurations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cd E:\NextStepAI
+powershell -ExecutionPolicy Bypass -File "START_OLLAMA_CPU_MODE.ps1"
+
+
+
+
+cd E:\NextStepAI
+.\RESTART_BACKEND.bat
+
+
+
+cd E:\NextStepAI
+.\START_FRONTEND.bat

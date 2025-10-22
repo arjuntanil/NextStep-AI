@@ -184,3 +184,8 @@ trl
 bitsandbytes
 torch
 accelerate
+
+# For RAG Coach with Ollama
+langchain-community
+ollama
+pypdf
