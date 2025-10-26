@@ -21,6 +21,8 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse
 from pydantic import BaseModel, Field # Import Field
 from spacy.matcher import PhraseMatcher
+from passlib.context import CryptContext  # Password hashing
+from datetime import datetime, timedelta  # For timestamps and JWT expiry
 
 # --- Fine-tuned Model Imports ---
 from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast, AutoModelForCausalLM, AutoTokenizer
@@ -50,7 +52,11 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "your-google-client-id")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "your-google-client-secret")
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-jwt-secret-key-here")
 ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 hours
 STREAMLIT_FRONTEND_URL = os.getenv("STREAMLIT_FRONTEND_URL", "http://localhost:8501")
+
+# Password hashing configuration
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 google_sso = GoogleSSO(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "http://localhost:8000/auth/callback")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
@@ -60,14 +66,18 @@ app = FastAPI(title="NextStepAI API")
 # --- Fine-tuned Model Configuration ---
 # Prefer the user-provided model folder if present (support both underscore and hyphen variants)
 from pathlib import Path as _Path
-if _Path("./career_advisor_final").exists():
+if _Path("./LLM_FineTuned").exists():
+    FINETUNED_MODEL_PATH = "./LLM_FineTuned"  # 🚀 PRIMARY: Latest fine-tuned model from Colab (68% overall, 80% certs, fast inference)
+elif _Path("./career-advisor-perfect-final").exists():
+    FINETUNED_MODEL_PATH = "./career-advisor-perfect-final"  # 🏆 FALLBACK 1: Perfect structure-aware model
+elif _Path("./career_advisor_final").exists():
     FINETUNED_MODEL_PATH = "./career_advisor_final"
 elif _Path("./career-advisor-final").exists():
     FINETUNED_MODEL_PATH = "./career-advisor-final"
 else:
     FINETUNED_MODEL_PATH = "./career-advisor-ultra-finetuned/final_checkpoint"  # Ultra version with better responses!
 
-FALLBACK_MODEL_PATH = "./career-advisor-finetuned-improved/final_checkpoint"  # Previous improved version as fallback
+FALLBACK_MODEL_PATH = "./career-advisor-perfect-final"  # Previous perfect model as safety fallback
 BASE_MODEL_NAME = "EleutherAI/pythia-160m-deduped"
 
 # --- Global Artifacts ---
@@ -146,25 +156,36 @@ class ProductionLLMCareerAdvisor:
         print("[INIT] Initializing Production Career Advisor...")
     
     def load_model(self):
-        """Load fine-tuned GPT-2-Medium model (355M params, GPU-optimized)"""
+        """Load fine-tuned DistilGPT-2 model (82M params, CPU-optimized) - MEMORY EFFICIENT"""
         try:
-            print(f"[LOAD] Loading production model from {self.model_path}...")
+            print(f"[LOAD] Loading model from {self.model_path}...")
+            print(f"[INFO] This may take 30-60 seconds on CPU...")
             
-            from transformers import GPT2LMHeadModel, GPT2Tokenizer
-            # Load tokenizer and model from the supplied model path using low_cpu_mem_usage to reduce peak memory
-            self.tokenizer = GPT2Tokenizer.from_pretrained(self.model_path)
-            # Use low_cpu_mem_usage if possible (reduces memory spikes while loading)
-            try:
-                self.model = GPT2LMHeadModel.from_pretrained(self.model_path, low_cpu_mem_usage=True)
-            except TypeError:
-                # Older HF transformers may not support low_cpu_mem_usage
-                self.model = GPT2LMHeadModel.from_pretrained(self.model_path)
-
-            # Move model to appropriate device
             import torch as _torch
-            device = _torch.device("cuda" if _torch.cuda.is_available() else "cpu")
+            from transformers import GPT2LMHeadModel, GPT2Tokenizer
+            
+            # Force CPU mode to avoid memory issues (Windows paging file error)
+            device = _torch.device("cpu")
+            print(f"[INFO] Using device: {device} (CPU mode for stability)")
+            
+            # Load tokenizer first (lightweight)
+            self.tokenizer = GPT2Tokenizer.from_pretrained(self.model_path)
+            
+            # Load model with MAXIMUM memory optimization
+            print("[INFO] Loading model weights (this is the slow part)...")
+            try:
+                self.model = GPT2LMHeadModel.from_pretrained(
+                    self.model_path,
+                    low_cpu_mem_usage=True,  # Reduce memory spikes
+                    torch_dtype=_torch.float32  # Use FP32 for CPU
+                )
+            except (TypeError, Exception) as e:
+                print(f"[WARN] low_cpu_mem_usage failed: {e}")
+                # Fallback: standard loading
+                self.model = GPT2LMHeadModel.from_pretrained(self.model_path)
+            
+            # Model already on CPU, no need to move
             self.device = str(device)
-            self.model.to(device)
             
             # Set pad token to eos token if not set
             if self.tokenizer.pad_token is None:
@@ -172,10 +193,12 @@ class ProductionLLMCareerAdvisor:
             
             self.is_loaded = True
             self.load_complete = True
-            print("[OK] Production Career Advisor loaded successfully!")
-            print(f"   Model: GPT-2-Medium (355M parameters)")
-            print(f"   Training: 6 epochs, ~1500 steps, GPU-optimized")
-            print(f"   Capabilities: Highly Accurate Skills, Interview Questions, Career Guidance")
+            print("[OK] ✅ Model loaded successfully!")
+            print(f"   📦 Model: DistilGPT-2 (82M parameters)")
+            print(f"   🎓 Training: 40 epochs, 498 examples (Colab GPU)")
+            print(f"   📊 Quality: 68% overall, 80% certifications")
+            print(f"   ⚡ Expected inference: 2-3 seconds per response")
+            print(f"   💾 Device: CPU (memory-safe mode)")
             
         except Exception as e:
             print(f"[WARN] Error loading model: {e}")
@@ -183,8 +206,8 @@ class ProductionLLMCareerAdvisor:
             self.is_loaded = False
             self.load_complete = True
     
-    def generate_advice(self, question: str, max_length: int = 450, temperature: float = 0.8) -> str:
-        """Generate career advice using fine-tuned LLM"""
+    def generate_advice(self, question: str, max_length: int = 300, temperature: float = 0.75) -> str:
+        """Generate career advice using fine-tuned LLM - OPTIMIZED FOR SPEED"""
         
         if not self.is_loaded or self.model is None:
             return self._fallback_guidance(question)
@@ -192,14 +215,14 @@ class ProductionLLMCareerAdvisor:
         try:
             import torch
             
-            # Format prompt to match training format
-            input_text = f"Question: {question}\n\nAnswer:"
+            # Format prompt to match training format (Colab model expects this format)
+            input_text = f"<|startoftext|>Career Question: {question}\n\nProfessional Career Advice:\n"
             
             inputs = self.tokenizer(
                 input_text, 
                 return_tensors="pt",
                 truncation=True,
-                max_length=512
+                max_length=256  # Reduced for faster tokenization
             )
             
             # Move to device
@@ -207,19 +230,21 @@ class ProductionLLMCareerAdvisor:
             self.model.to(device)
             inputs = {k: v.to(device) for k, v in inputs.items()}
             
-            # Generate response with improved parameters
+            # Generate response with SPEED-OPTIMIZED parameters
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
+                    min_new_tokens=150,      # Medium-length responses (150-300 words)
                     max_new_tokens=max_length,
-                    temperature=temperature,
+                    temperature=temperature,  # Balanced creativity
                     do_sample=True,
-                    top_p=0.9,
-                    top_k=50,
-                    repetition_penalty=1.2,
+                    top_p=0.92,              # Slightly focused for speed
+                    top_k=40,                # Reduced for faster sampling
+                    repetition_penalty=1.15, # Lower penalty = faster generation
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
-                    no_repeat_ngram_size=2
+                    no_repeat_ngram_size=2,
+                    use_cache=True           # Enable KV cache for speed
                 )
             
             # Decode LLM output
@@ -448,8 +473,23 @@ def get_db():
         db.close()
 
 # --- 5. Authentication Functions & Dependencies ---
-def create_access_token(data: dict):
-    return jwt.encode(data.copy(), JWT_SECRET_KEY, algorithm=ALGORITHM)
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Create JWT access token with optional expiry"""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify password against hash"""
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    """Hash a password for storing"""
+    return pwd_context.hash(password)
 
 async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme), db: SessionLocal = Depends(get_db)) -> Optional[User]:
     if token is None: return None
@@ -459,7 +499,12 @@ async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme
         if email is None: return None
     except JWTError:
         return None
-    return db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email).first()
+    if user:
+        # Update last active timestamp
+        user.last_active = datetime.utcnow()
+        db.commit()
+    return user
 
 async def get_current_user_required(current_user: User = Depends(get_current_user_optional)) -> User:
     if current_user is None:
@@ -486,7 +531,109 @@ async def auth_callback(request: Request, db: SessionLocal = Depends(get_db)):
 
 @app.get("/users/me", tags=["Users"])
 async def read_users_me(current_user: User = Depends(get_current_user_required)):
-    return {"email": current_user.email, "full_name": current_user.full_name, "id": current_user.id}
+    return {
+        "email": current_user.email, 
+        "full_name": current_user.full_name, 
+        "id": current_user.id,
+        "role": current_user.role
+    }
+
+# --- 6b. Manual Authentication Endpoints ---
+class UserRegister(BaseModel):
+    email: str
+    full_name: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+@app.post("/auth/register", response_model=Token, tags=["Authentication"])
+async def register_user(user: UserRegister, db: SessionLocal = Depends(get_db)):
+    """Register a new user with email and password"""
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create new user
+    hashed_password = get_password_hash(user.password)
+    now = datetime.utcnow()
+    db_user = User(
+        email=user.email,
+        full_name=user.full_name,
+        password_hash=hashed_password,
+        role="user",
+        is_active=True,
+        created_at=now,
+        last_active=now
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": db_user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/auth/manual-login", response_model=Token, tags=["Authentication"])
+async def manual_login(user: UserLogin, db: SessionLocal = Depends(get_db)):
+    """Login with email and password"""
+    # Find user
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Verify password
+    if not verify_password(user.password, db_user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    # Check if user is active
+    if not db_user.is_active:
+        raise HTTPException(status_code=403, detail="Account suspended. Contact administrator.")
+    
+    # Update last active
+    db_user.last_active = datetime.utcnow()
+    db.commit()
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": db_user.email})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/admin/login", response_model=Token, tags=["Admin"])
+async def admin_login(user: UserLogin, db: SessionLocal = Depends(get_db)):
+    """Admin login with role verification"""
+    # Find user
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Verify password
+    if not verify_password(user.password, db_user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Verify admin role
+    if db_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Access denied. Admin privileges required.")
+    
+    # Check if user is active
+    if not db_user.is_active:
+        raise HTTPException(status_code=403, detail="Account suspended")
+    
+    # Update last active
+    db_user.last_active = datetime.utcnow()
+    db.commit()
+    
+    # Create access token
+    access_token = create_access_token(data={"sub": db_user.email})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer"
+    }
 
 # --- 7. Core AI Endpoints ---
 class Query(BaseModel): text: str
@@ -622,21 +769,91 @@ def scrape_live_jobs(job_title: str, location: str = "India") -> List[Dict[str, 
     return scraped_jobs
 
 # --- Generative Feedback Function ---
+def generate_layout_feedback_fallback(resume_text: str) -> str:
+    """Rule-based layout feedback when LLM is unavailable"""
+    feedback_points = []
+    text_lower = resume_text.lower()
+    
+    # Check for common sections
+    has_summary = any(marker in text_lower for marker in ['summary', 'profile', 'objective', 'about me'])
+    has_experience = any(marker in text_lower for marker in ['experience', 'employment', 'work history'])
+    has_education = any(marker in text_lower for marker in ['education', 'academic', 'degree'])
+    has_skills = any(marker in text_lower for marker in ['skills', 'technical skills', 'competencies'])
+    has_contact = any(marker in text_lower for marker in ['email', 'phone', 'linkedin', '@'])
+    
+    # Section order feedback
+    if not has_contact:
+        feedback_points.append("✅ **Add Contact Information**: Include your email, phone number, and LinkedIn profile at the top of your resume.")
+    
+    if not has_summary:
+        feedback_points.append("✅ **Add Professional Summary**: Start with a 2-3 line summary highlighting your experience and key strengths.")
+    
+    if not has_skills:
+        feedback_points.append("✅ **Add Skills Section**: Include a dedicated section listing your technical skills and tools.")
+    
+    if not has_experience:
+        feedback_points.append("⚠️ **Add Work Experience**: Include your professional experience with job titles, companies, and dates.")
+    
+    if not has_education:
+        feedback_points.append("✅ **Add Education**: Include your educational background with degrees and institutions.")
+    
+    # Formatting checks
+    if len(resume_text) < 300:
+        feedback_points.append("⚠️ **Resume Too Short**: Your resume appears brief. Expand on your experience and achievements.")
+    elif len(resume_text) > 5000:
+        feedback_points.append("⚠️ **Resume Too Long**: Consider condensing to 1-2 pages for better readability.")
+    
+    # Bullet point usage
+    if '-' not in resume_text and '•' not in resume_text and '*' not in resume_text:
+        feedback_points.append("✅ **Use Bullet Points**: Format your experience and achievements using bullet points for better ATS scanning.")
+    
+    # Keywords and metrics
+    has_metrics = any(char.isdigit() for char in resume_text)
+    if not has_metrics:
+        feedback_points.append("✅ **Add Quantifiable Achievements**: Include numbers, percentages, and metrics to demonstrate impact.")
+    
+    # Default positive feedback if all looks good
+    if len(feedback_points) < 2:
+        feedback_points = [
+            "✅ **Strong Structure**: Your resume has good section organization.",
+            "✅ **ATS-Friendly Format**: The layout appears compatible with Applicant Tracking Systems.",
+            "✅ **Complete Sections**: All essential resume sections are present.",
+            "💡 **Tip**: Continue to update your resume with recent achievements and new skills."
+        ]
+    
+    return "\n\n".join(feedback_points[:5])  # Return top 5 feedback points
+
+
 def generate_layout_feedback(resume_text: str) -> str:
     global llm
-    if llm is None: return "Layout analysis feature is currently unavailable."
-    prompt_template = """You are an expert resume reviewer for Applicant Tracking Systems (ATS). 
-    Analyze the structure and layout of the following resume text. Do not comment on the content (skills, experience quality). 
-    Focus on formatting, readability, section order, and overall ATS compatibility. Provide 3-5 actionable bullet points for improvement.
-    Resume Text: --- {text} --- """
-    prompt = ChatPromptTemplate.from_template(prompt_template)
-    layout_chain = prompt | llm | StrOutputParser()
-    try:
-        feedback = layout_chain.invoke({"text": resume_text[:4000]})
-        return feedback
-    except Exception as e:
-        print(f"Error generating layout feedback: {e}")
-        return "Could not generate layout feedback due to an API or processing error."
+    
+    # Try LLM-based feedback first
+    if llm is not None:
+        prompt_template = """You are an expert resume reviewer for Applicant Tracking Systems (ATS). 
+        Analyze the structure and layout of the following resume text. Do not comment on the content (skills, experience quality). 
+        Focus on formatting, readability, section order, and overall ATS compatibility. Provide 3-5 actionable bullet points for improvement.
+        Resume Text: --- {text} --- """
+        prompt = ChatPromptTemplate.from_template(prompt_template)
+        layout_chain = prompt | llm | StrOutputParser()
+        try:
+            print(f"[INFO] Generating layout feedback for resume (length: {len(resume_text)} chars)...")
+            feedback = layout_chain.invoke({"text": resume_text[:4000]})
+            print(f"[OK] Layout feedback generated successfully (length: {len(feedback)} chars)")
+            return feedback
+        except Exception as e:
+            error_name = type(e).__name__
+            print(f"[ERROR] LLM layout feedback failed: {error_name}: {str(e)}")
+            
+            # Check if it's a quota/rate limit error
+            if error_name in ['ResourceExhausted', 'QuotaExceeded', 'RateLimitError']:
+                print("[INFO] API quota exceeded, using fallback rule-based feedback")
+            else:
+                import traceback
+                traceback.print_exc()
+    
+    # Fallback to rule-based feedback
+    print("[INFO] Using rule-based layout feedback (LLM unavailable or failed)")
+    return generate_layout_feedback_fallback(resume_text)
 
 # --- LLM Skill Extraction Function ---
 def extract_skills_with_llm(resume_text: str) -> List[str]:
@@ -777,7 +994,7 @@ async def query_career_path(
 ):
     generated_advice = ""
     
-    # Use Fine-tuned Model as Primary Advisor if loaded; otherwise trigger background load and fallback to RAG
+    # Use Fine-tuned Model as Primary Advisor if loaded; otherwise use RAG immediately (NO BACKGROUND LOADING)
     try:
         if finetuned_career_advisor and finetuned_career_advisor.is_loaded:
             generated_advice = finetuned_career_advisor.generate_advice(
@@ -787,30 +1004,13 @@ async def query_career_path(
             )
             print(f"[OK] Fine-tuned model generated advice for: {query.text[:50]}...")
         else:
-            # If wrapper exists but model not loaded, start background load and fallback to RAG
-            if finetuned_career_advisor:
-                try:
-                    # Kick off background load (non-blocking)
-                    from threading import Thread
-
-                    def _bg_load():
-                        try:
-                            finetuned_career_advisor.llm_advisor.load_start_time = __import__('datetime').datetime.utcnow()
-                            finetuned_career_advisor.load_model()
-                        except Exception as _e:
-                            print(f"Background model load failed: {_e}")
-
-                    Thread(target=_bg_load, daemon=True).start()
-                    print("[INFO] Fine-tuned model not loaded: background load started.")
-                except Exception as _e:
-                    print(f"Could not start background load: {_e}")
-
-            # Immediate fallback to RAG
+            # DISABLED: Background loading causes timeout issues
+            # Use RAG immediately for fast response
             if guide_rag_chain:
                 generated_advice = guide_rag_chain.invoke(query.text)
-                print("[WAIT] Using RAG model (fine-tuned not available)")
+                print("[RAG] Using RAG model (fine-tuned model not loaded - use /load-model endpoint to load manually)")
             else:
-                generated_advice = "Career advisor is temporarily unavailable."
+                generated_advice = "Career advisor is temporarily unavailable. Please try the RAG Coach tab or load the fine-tuned model manually."
     except Exception as e:
         print(f"Error during advice generation: {e}")
         generated_advice = "Sorry, I encountered an error while generating career advice."
@@ -925,7 +1125,7 @@ async def get_career_advice_ai(request: CareerAdviceRequest):
     Get career advice using the fine-tuned Pythia model
     """
     try:
-        # If the fine-tuned model is loaded, use it. Otherwise start background load and fallback to RAG.
+        # If the fine-tuned model is loaded, use it. Otherwise use RAG immediately (NO BACKGROUND LOADING)
         advice = None
         if finetuned_career_advisor and finetuned_career_advisor.is_loaded:
             advice = finetuned_career_advisor.generate_advice(
@@ -933,34 +1133,20 @@ async def get_career_advice_ai(request: CareerAdviceRequest):
                 max_length=request.max_length,
                 temperature=request.temperature
             )
+            print(f"[OK] Fine-tuned LLM generated response")
         else:
-            # Start background load if possible
-            if finetuned_career_advisor:
-                try:
-                    from threading import Thread
-
-                    def _bg_load():
-                        try:
-                            finetuned_career_advisor.llm_advisor.load_start_time = __import__('datetime').datetime.utcnow()
-                            finetuned_career_advisor.load_model()
-                        except Exception as _e:
-                            print(f"Background model load failed: {_e}")
-
-                    Thread(target=_bg_load, daemon=True).start()
-                    print("[INFO] Fine-tuned model not loaded: background load started.")
-                except Exception as _e:
-                    print(f"Could not start background load: {_e}")
-
-            # Fallback to RAG immediately
+            # DISABLED: Background loading causes timeout and memory issues
+            # Use RAG immediately for fast, reliable responses
             if guide_rag_chain:
                 try:
                     advice = guide_rag_chain.invoke(request.text)
-                    print("[WAIT] Using RAG model (fine-tuned not available)")
+                    print("[RAG] Using RAG model (fine-tuned model not loaded)")
+                    print("[INFO] To use fine-tuned model, call: POST /load-model")
                 except Exception as e:
-                    print(f"Error during RAG invocation: {e}")
+                    print(f"[ERROR] RAG invocation failed: {e}")
                     advice = "Sorry, I encountered an error while generating career advice."
             else:
-                advice = "Fine-tuned career advisor is temporarily unavailable."
+                advice = "Career advisor is temporarily unavailable. Please use the RAG Coach tab."
         
         # Get job matching for completeness
         from sentence_transformers import util as sentence_util 
@@ -1068,24 +1254,25 @@ async def upload_rag_documents(
             if rag_coach_instance is None:
                 rag_coach_instance = RAGCoachSystem()
 
-            # Collect PDFs to index
+            # Collect PDFs to index - ONLY from uploads folder for user-specific docs
             pdf_files = []
-            for folder in ["./career_guides", "./uploads"]:
-                if os.path.exists(folder):
-                    pdf_files.extend([
-                        os.path.join(folder, f)
-                        for f in os.listdir(folder)
-                        if f.lower().endswith('.pdf')
-                    ])
+            upload_folder = "./uploads"
+            if os.path.exists(upload_folder):
+                pdf_files = [
+                    os.path.join(upload_folder, f)
+                    for f in os.listdir(upload_folder)
+                    if f.lower().endswith('.pdf')
+                ]
 
             if not pdf_files:
-                logging.warning("[WARN] No PDFs found after upload to index.")
+                logging.warning("[WARN] No PDFs found in uploads folder to index.")
                 return
 
-            logging.info(f"[DATA] Background: building index from {len(pdf_files)} PDFs...")
-            rag_coach_instance.build_vector_store(pdf_files, force_rebuild=False)
+            logging.info(f"[DATA] Background: REBUILDING index from {len(pdf_files)} PDFs in uploads folder...")
+            # CRITICAL FIX: force_rebuild=True to ensure fresh index with new documents
+            rag_coach_instance.build_vector_store(pdf_files, force_rebuild=True)
             rag_coach_instance.setup_qa_chain()
-            logging.info("[OK] Background: RAG Coach indexing complete")
+            logging.info("[OK] Background: RAG Coach indexing complete - ready for queries")
         except Exception as e:
             logging.error(f"[ERROR] Background indexing failed: {e}")
 
@@ -1548,6 +1735,16 @@ List 5 skills."""
                 job_skills = _extract_skill_tokens(job_text)
                 resume_skills = _extract_skill_tokens(resume_text)
                 jd_only_skills_normalized = sorted(list(job_skills.difference(resume_skills)))
+                
+                # Calculate similarity metrics for visualization
+                matched_skills_set = job_skills.intersection(resume_skills)
+                matched_skills_normalized = sorted(list(matched_skills_set))
+                total_jd_skills = len(job_skills)
+                matched_skills_count = len(matched_skills_set)
+                missing_skills_count = len(jd_only_skills_normalized)
+                
+                # Calculate match percentage
+                match_percentage = (matched_skills_count / total_jd_skills * 100) if total_jd_skills > 0 else 0
 
                 # Create display-friendly names for the skills
                 display_name_map = {
@@ -1604,6 +1801,12 @@ List 5 skills."""
                 for skill in jd_only_skills_normalized:
                     display_name = display_name_map.get(skill, skill.title())
                     jd_only_skills_display.append(display_name)
+                
+                # Apply display names to matched skills as well
+                matched_skills_display = []
+                for skill in matched_skills_normalized:
+                    display_name = display_name_map.get(skill, skill.title())
+                    matched_skills_display.append(display_name)
 
                 # Friendly bullet lines for JD-only skills (vertical format with newlines)
                 if jd_only_skills_display:
@@ -1655,7 +1858,15 @@ List 5 skills."""
                     "skills": jd_only_skills_display,
                     "resume_bullets": None,
                     "keywords": ats_keywords_from_jd if jd_only_skills_display else _format_ats_keywords(job_text),
-                    "generated_at": datetime.datetime.utcnow().isoformat() + 'Z'
+                    "generated_at": datetime.datetime.utcnow().isoformat() + 'Z',
+                    "similarity_metrics": {
+                        "match_percentage": round(match_percentage, 2),
+                        "total_jd_skills": total_jd_skills,
+                        "matched_skills_count": matched_skills_count,
+                        "missing_skills_count": missing_skills_count,
+                        "matched_skills": matched_skills_display,
+                        "missing_skills": jd_only_skills_display
+                    }
                 }
 
                 # Save to file for quick retrieval
@@ -1821,7 +2032,9 @@ async def query_rag_coach(
                     owner_id=current_user.id,
                     question=query.question,
                     answer=result['answer'],
-                    sources=json.dumps(sources)
+                    sources=json.dumps(sources),
+                    query_length=len(query.question),
+                    answer_length=len(result['answer'])
                 )
                 db.add(new_rag_query)
                 db.commit()
@@ -1843,7 +2056,9 @@ async def query_rag_coach(
                     owner_id=current_user.id,
                     question=query.question,
                     answer=answer,
-                    sources=json.dumps(["Direct LLM (No PDFs uploaded)"])
+                    sources=json.dumps(["Direct LLM (No PDFs uploaded)"]),
+                    query_length=len(query.question),
+                    answer_length=len(answer)
                 )
                 db.add(new_rag_query)
                 db.commit()
@@ -1905,4 +2120,459 @@ async def get_rag_processed_result():
     return {
         "files": rag_processing_state.get("files", []),
         "result": rag_processing_state.get("result", {})
+    }
+
+# ============================================================================
+# ADMIN ENDPOINTS - Dashboard Analytics & User Management
+# ============================================================================
+
+def get_current_admin(current_user: User = Depends(get_current_user_required)) -> User:
+    """Verify current user has admin role"""
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin privileges required")
+    return current_user
+
+@app.get("/admin/stats", tags=["Admin"])
+async def get_admin_stats(
+    current_admin: User = Depends(get_current_admin),
+    db: SessionLocal = Depends(get_db)
+):
+    """Get comprehensive dashboard statistics"""
+    try:
+        from sqlalchemy import func
+        from datetime import timedelta
+        
+        now = datetime.utcnow()
+        thirty_days_ago = now - timedelta(days=30)
+        seven_days_ago = now - timedelta(days=7)
+        
+        # User statistics
+        total_users = db.query(User).count()
+        active_users_30d = db.query(User).filter(User.last_active >= thirty_days_ago).count()
+        active_users_7d = db.query(User).filter(User.last_active >= seven_days_ago).count()
+        new_users_7days = db.query(User).filter(User.created_at >= seven_days_ago).count()
+        
+        # Analysis and query statistics
+        total_analyses = db.query(ResumeAnalysis).count()
+        analyses_7days = db.query(ResumeAnalysis).filter(ResumeAnalysis.created_at >= seven_days_ago).count()
+        
+        total_queries = db.query(CareerQuery).count()
+        queries_7days = db.query(CareerQuery).filter(CareerQuery.created_at >= seven_days_ago).count()
+        
+        # Average match percentage
+        avg_match_result = db.query(func.avg(ResumeAnalysis.match_percentage)).filter(
+            ResumeAnalysis.match_percentage.isnot(None)
+        ).scalar()
+        avg_match_percentage = round(avg_match_result, 1) if avg_match_result else 0
+        
+        # User growth data (last 30 days)
+        user_growth = []
+        try:
+            for i in range(30):
+                date = (now - timedelta(days=29-i)).date()
+                date_str = str(date)
+                # SQLite-compatible date filtering
+                count = db.query(User).filter(
+                    User.created_at <= datetime.combine(date, datetime.max.time())
+                ).count()
+                user_growth.append({"date": date_str, "count": count})
+        except Exception as e:
+            logging.error(f"Error in user growth: {e}")
+            user_growth = []
+        
+        # Top recommended jobs
+        top_jobs = []
+        try:
+            top_jobs_query = db.query(
+                ResumeAnalysis.recommended_job_title,
+                func.count(ResumeAnalysis.id).label("count")
+            ).group_by(ResumeAnalysis.recommended_job_title).order_by(func.count(ResumeAnalysis.id).desc()).limit(10).all()
+            
+            top_jobs = [{"job": job, "count": count} for job, count in top_jobs_query if job]
+        except Exception as e:
+            logging.error(f"Error in top jobs: {e}")
+        
+        # Top missing skills
+        top_missing_skills = []
+        try:
+            all_missing_skills = []
+            for analysis in db.query(ResumeAnalysis).all():
+                if analysis.skills_to_add:
+                    try:
+                        skills = json.loads(analysis.skills_to_add) if isinstance(analysis.skills_to_add, str) else analysis.skills_to_add
+                        if isinstance(skills, list):
+                            all_missing_skills.extend(skills)
+                    except:
+                        pass
+            
+            from collections import Counter
+            skill_counts = Counter(all_missing_skills)
+            top_missing_skills = [{"skill": skill, "count": count} for skill, count in skill_counts.most_common(10)]
+        except Exception as e:
+            logging.error(f"Error in missing skills: {e}")
+        
+        # Match score distribution
+        match_distribution = []
+        try:
+            scores = db.query(ResumeAnalysis.match_percentage).filter(ResumeAnalysis.match_percentage.isnot(None)).all()
+            match_distribution = [score[0] for score in scores if score[0] is not None]
+        except Exception as e:
+            logging.error(f"Error in match distribution: {e}")
+        
+        # Recent activity (last 20 actions)
+        recent_activity = []
+        try:
+            # Get recent analyses (filter out NULL created_at)
+            recent_analyses = db.query(ResumeAnalysis).filter(
+                ResumeAnalysis.created_at.isnot(None)
+            ).order_by(ResumeAnalysis.created_at.desc()).limit(10).all()
+            
+            for analysis in recent_analyses:
+                try:
+                    user = db.query(User).filter(User.id == analysis.owner_id).first()
+                    recent_activity.append({
+                        "type": "resume_analysis",
+                        "user": user.email if user else "Unknown",
+                        "action": f"Analyzed resume for {analysis.recommended_job_title or 'job'}",
+                        "timestamp": analysis.created_at.isoformat() if analysis.created_at else str(now)
+                    })
+                except Exception as e:
+                    logging.error(f"Error processing analysis {analysis.id}: {e}")
+            
+            # Get recent queries (filter out NULL created_at)
+            recent_queries = db.query(CareerQuery).filter(
+                CareerQuery.created_at.isnot(None)
+            ).order_by(CareerQuery.created_at.desc()).limit(10).all()
+            
+            for query in recent_queries:
+                try:
+                    user = db.query(User).filter(User.id == query.owner_id).first()
+                    question_text = query.user_query_text if hasattr(query, 'user_query_text') else str(query)
+                    recent_activity.append({
+                        "type": "career_query",
+                        "user": user.email if user else "Unknown",
+                        "action": f"Asked: {question_text[:50]}..." if len(question_text) > 50 else f"Asked: {question_text}",
+                        "timestamp": query.created_at.isoformat() if query.created_at else str(now)
+                    })
+                except Exception as e:
+                    logging.error(f"Error processing query {query.id}: {e}")
+            
+            # Sort by timestamp and limit to 20
+            recent_activity.sort(key=lambda x: x["timestamp"], reverse=True)
+            recent_activity = recent_activity[:20]
+        except Exception as e:
+            logging.error(f"Error in recent activity: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+        
+        # Activity heatmap (user activity by day and hour)
+        activity_heatmap = []
+        try:
+            # Get all activities with timestamps
+            all_activities = []
+            
+            # Add resume analyses
+            for analysis in db.query(ResumeAnalysis).filter(ResumeAnalysis.created_at.isnot(None)).all():
+                if analysis.created_at:
+                    all_activities.append(analysis.created_at)
+            
+            # Add career queries
+            for query in db.query(CareerQuery).filter(CareerQuery.created_at.isnot(None)).all():
+                if query.created_at:
+                    all_activities.append(query.created_at)
+            
+            # Add RAG queries
+            for rag in db.query(RAGCoachQuery).filter(RAGCoachQuery.created_at.isnot(None)).all():
+                if rag.created_at:
+                    all_activities.append(rag.created_at)
+            
+            # Create heatmap data structure
+            from collections import defaultdict
+            activity_count = defaultdict(int)
+            
+            for activity_time in all_activities:
+                day = activity_time.strftime('%A')
+                hour = activity_time.hour
+                activity_count[(day, hour)] += 1
+            
+            # Convert to list format for frontend
+            days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+            for day in days:
+                for hour in range(24):
+                    count = activity_count.get((day, hour), 0)
+                    if count > 0:  # Only include non-zero counts
+                        activity_heatmap.append({
+                            "day": day,
+                            "hour": hour,
+                            "count": count
+                        })
+        except Exception as e:
+            logging.error(f"Error in activity heatmap: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+        
+        # Retention rates
+        retention_7days = 0
+        retention_30days = 0
+        try:
+            # Users who joined before 7 days ago and were active in last 7 days
+            users_before_7d = db.query(User).filter(User.created_at < seven_days_ago).count()
+            if users_before_7d > 0:
+                retained_7d = db.query(User).filter(
+                    User.created_at < seven_days_ago,
+                    User.last_active >= seven_days_ago
+                ).count()
+                retention_7days = round((retained_7d / users_before_7d * 100), 1)
+            
+            # Users who joined before 30 days ago and were active in last 30 days
+            users_before_30d = db.query(User).filter(User.created_at < thirty_days_ago).count()
+            if users_before_30d > 0:
+                retained_30d = db.query(User).filter(
+                    User.created_at < thirty_days_ago,
+                    User.last_active >= thirty_days_ago
+                ).count()
+                retention_30days = round((retained_30d / users_before_30d * 100), 1)
+        except Exception as e:
+            logging.error(f"Error in retention calculation: {e}")
+        
+        # Retention rate (users active in last 30 days / total users)
+        retention_rate = (active_users_30d / total_users * 100) if total_users > 0 else 0
+        
+        return {
+            "total_users": total_users,
+            "active_users_30days": active_users_30d,
+            "active_users_7days": active_users_7d,
+            "new_users_7days": new_users_7days,
+            "total_analyses": total_analyses,
+            "analyses_7days": analyses_7days,
+            "total_queries": total_queries,
+            "queries_7days": queries_7days,
+            "avg_match_percentage": avg_match_percentage,
+            "retention_rate": round(retention_rate, 1),
+            "retention_7days": retention_7days,
+            "retention_30days": retention_30days,
+            "user_growth": user_growth,
+            "top_jobs": top_jobs,
+            "top_missing_skills": top_missing_skills,
+            "match_distribution": match_distribution,
+            "recent_activity": recent_activity,
+            "activity_heatmap": activity_heatmap
+        }
+    except Exception as e:
+        logging.error(f"Error in admin stats: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+@app.get("/admin/users", tags=["Admin"])
+async def get_all_users(
+    current_admin: User = Depends(get_current_admin),
+    db: SessionLocal = Depends(get_db),
+    skip: int = 0,
+    limit: int = 50,
+    search: Optional[str] = None
+):
+    """Get paginated list of all users with search"""
+    query = db.query(User)
+    
+    # Apply search filter
+    if search:
+        query = query.filter(
+            (User.email.contains(search)) | (User.full_name.contains(search))
+        )
+    
+    # Get total count
+    total = query.count()
+    
+    # Get paginated users
+    users = query.offset(skip).limit(limit).all()
+    
+    # Format user data
+    user_list = []
+    for user in users:
+        # Count user activities
+        analyses_count = db.query(ResumeAnalysis).filter(ResumeAnalysis.owner_id == user.id).count()
+        queries_count = db.query(CareerQuery).filter(CareerQuery.owner_id == user.id).count()
+        
+        user_list.append({
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "role": user.role,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_active": user.last_active.isoformat() if user.last_active else None,
+            "analyses_count": analyses_count,
+            "queries_count": queries_count
+        })
+    
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "users": user_list
+    }
+
+@app.get("/admin/user/{user_id}", tags=["Admin"])
+async def get_user_details(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: SessionLocal = Depends(get_db)
+):
+    """Get detailed user information with full history"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get user's resume analyses
+    analyses = db.query(ResumeAnalysis).filter(ResumeAnalysis.owner_id == user_id).order_by(ResumeAnalysis.created_at.desc()).all()
+    analyses_data = []
+    for analysis in analyses:
+        analyses_data.append({
+            "id": analysis.id,
+            "recommended_job": analysis.recommended_job_title,
+            "match_percentage": analysis.match_percentage,
+            "total_skills_count": analysis.total_skills_count,
+            "created_at": analysis.created_at.isoformat() if analysis.created_at else None
+        })
+    
+    # Get user's career queries
+    queries = db.query(CareerQuery).filter(CareerQuery.owner_id == user_id).order_by(CareerQuery.created_at.desc()).all()
+    queries_data = []
+    for query in queries:
+        queries_data.append({
+            "id": query.id,
+            "question": query.user_query_text if hasattr(query, 'user_query_text') else "N/A",
+            "model_used": query.model_used,
+            "response_time": query.response_time_seconds,
+            "created_at": query.created_at.isoformat() if query.created_at else None
+        })
+    
+    # Get user's RAG queries
+    rag_queries = db.query(RAGCoachQuery).filter(RAGCoachQuery.owner_id == user_id).order_by(RAGCoachQuery.created_at.desc()).all()
+    rag_data = []
+    for rag in rag_queries:
+        rag_data.append({
+            "id": rag.id,
+            "question": rag.question,
+            "query_length": rag.query_length,
+            "answer_length": rag.answer_length,
+            "created_at": rag.created_at.isoformat() if rag.created_at else None
+        })
+    
+    return {
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name,
+            "role": user.role,
+            "is_active": user.is_active,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_active": user.last_active.isoformat() if user.last_active else None
+        },
+        "analyses": analyses_data,
+        "career_queries": queries_data,
+        "rag_queries": rag_data,
+        "summary": {
+            "total_analyses": len(analyses_data),
+            "total_queries": len(queries_data),
+            "total_rag_queries": len(rag_data)
+        }
+    }
+
+@app.put("/admin/user/{user_id}/suspend", tags=["Admin"])
+async def suspend_user(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: SessionLocal = Depends(get_db)
+):
+    """Suspend a user account"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Cannot suspend admin users")
+    
+    user.is_active = False
+    db.commit()
+    
+    return {"message": f"User {user.email} has been suspended"}
+
+@app.put("/admin/user/{user_id}/activate", tags=["Admin"])
+async def activate_user(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: SessionLocal = Depends(get_db)
+):
+    """Activate a suspended user account"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.is_active = True
+    db.commit()
+    
+    return {"message": f"User {user.email} has been activated"}
+
+@app.delete("/admin/user/{user_id}", tags=["Admin"])
+async def delete_user(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: SessionLocal = Depends(get_db)
+):
+    """Delete a user and all associated data (GDPR compliance)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user.role == "admin":
+        raise HTTPException(status_code=403, detail="Cannot delete admin users")
+    
+    # Delete all associated data
+    db.query(ResumeAnalysis).filter(ResumeAnalysis.owner_id == user_id).delete()
+    db.query(CareerQuery).filter(CareerQuery.owner_id == user_id).delete()
+    db.query(RAGCoachQuery).filter(RAGCoachQuery.owner_id == user_id).delete()
+    
+    # Delete user
+    db.delete(user)
+    db.commit()
+    
+    return {"message": f"User {user.email} and all associated data have been deleted"}
+
+@app.post("/admin/user/create", tags=["Admin"])
+async def create_user_by_admin(
+    user: UserRegister,
+    current_admin: User = Depends(get_current_admin),
+    db: SessionLocal = Depends(get_db)
+):
+    """Manually create a new user (admin only)"""
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == user.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Create new user
+    hashed_password = get_password_hash(user.password)
+    now = datetime.utcnow()
+    db_user = User(
+        email=user.email,
+        full_name=user.full_name,
+        password_hash=hashed_password,
+        role="user",
+        is_active=True,
+        created_at=now,
+        last_active=now
+    )
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    
+    return {
+        "message": f"User {user.email} created successfully",
+        "user": {
+            "id": db_user.id,
+            "email": db_user.email,
+            "full_name": db_user.full_name
+        }
     }
