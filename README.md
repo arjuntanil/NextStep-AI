@@ -2,7 +2,9 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-18.2+-61dafb.svg)](https://reactjs.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.28+-red.svg)](https://streamlit.io/)
+[![TinyLLama](https://img.shields.io/badge/TinyLLama-1.1B-orange.svg)](https://github.com/jzhang38/TinyLlama)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## 📋 Table of Contents
@@ -26,7 +28,23 @@
 
 **NextStepAI** is a comprehensive, production-ready career coaching platform that bridges the gap between job seekers and their ideal career paths using cutting-edge AI technologies. The platform combines **Machine Learning classification**, **Fine-tuned Large Language Models**, and **Retrieval-Augmented Generation (RAG)** to deliver personalized, actionable career insights.
 
-### 🎯 What Problem Does This Solve?
+### � Dual Frontend Options
+
+NextStepAI now offers **two modern frontend options**:
+
+1. **React Frontend (NEW!)** - Modern, dark-themed UI with Material-UI components
+   - 🌙 Stunning dark theme with glass morphism effects
+   - ⚡ Fast, responsive single-page application
+   - 🎨 Beautiful gradients and smooth animations
+   - 📱 Mobile-friendly responsive design
+   - 🔐 JWT-based authentication with protected routes
+
+2. **Streamlit Frontend** - Data-centric UI for rapid prototyping
+   - 📊 Interactive charts and visualizations
+   - 🚀 Quick deployment and iteration
+   - 📄 Simple file upload and analysis
+
+### �🎯 What Problem Does This Solve?
 
 In today's competitive job market, professionals face three critical challenges:
 
@@ -47,16 +65,35 @@ In today's competitive job market, professionals face three critical challenges:
 |---------|-----------|-------------|
 | **Resume Analysis** | Gemini LLM + Scikit-learn | AI skill extraction, job matching, gap analysis |
 | **Career Advisor** | Fine-tuned GPT-2 | Custom-trained model (749 examples, 15 epochs) |
-| **RAG Coach** | Ollama + Mistral 7B | Upload resume+JD PDFs for personalized guidance |
+| **RAG Coach** | TinyLLama 1.1B + Ollama | Upload resume+JD PDFs for personalized guidance |
 | **Job Scraping** | BeautifulSoup | Real-time LinkedIn job postings from India |
 | **Authentication** | Google OAuth + JWT | Secure login with history tracking |
 | **History Storage** | SQLite + SQLAlchemy | Saves all analyses, queries, and RAG interactions |
+| **React Frontend** | React 18 + Material-UI | Modern dark-themed SPA with glass morphism |
+
+### 🤖 AI Models Used:
+
+* **TinyLLama 1.1B** - Lightweight, efficient LLM for RAG-based career coaching
+  - 1.1 billion parameters optimized for CPU/GPU inference
+  - Runs locally via Ollama for privacy and speed
+  - Quantized Q4 model for 4GB RAM compatibility
+  - Perfect for context-aware document Q&A
+  
+* **GPT-2 Medium** - Fine-tuned on 749 career advice examples
+  - 355M parameters with LoRA adapters for career coaching
+  - 15 epochs of training on curated dataset
+  
+* **Google Gemini Pro** - Advanced skill extraction and feedback generation
+  - Resume skill parsing with contextual NER
+  - ATS optimization suggestions
 
 ### 🏗️ Architecture Highlights:
-* **Decoupled Design** - Streamlit frontend + FastAPI backend
+* **Dual Frontend** - React SPA + Streamlit for different use cases
+* **Decoupled Design** - React/Streamlit frontend + FastAPI backend
 * **Production-Ready** - Environment variables, lazy loading, comprehensive logging
 * **Scalable** - Async operations, background threading, optimized indexing
 * **Secure** - OAuth 2.0, JWT tokens, no hardcoded secrets
+* **Lightweight AI** - TinyLLama 1.1B for efficient local inference
 
 ---
 
@@ -147,7 +184,10 @@ Response: Comprehensive advice covering:
 5. **Interactive Q&A** - Ask follow-up questions based on YOUR documents
 
 **Technologies:**
-- **LLM:** Ollama with Mistral 7B Q4 (quantized, 4GB RAM, runs locally)
+- **LLM:** TinyLLama 1.1B via Ollama (lightweight, CPU-friendly, runs locally)
+  - Quantized Q4 model optimized for 4GB RAM
+  - Fast inference with local privacy
+  - Perfect balance of performance and resource usage
 - **PDF Parsing:** PyPDFLoader (LangChain)
 - **Embeddings:** HuggingFaceEmbeddings (all-MiniLM-L6-v2)
 - **Vector Store:** FAISS with metadata tagging
@@ -207,6 +247,14 @@ Docker, Microservices, Python, React.js, PostgreSQL
 The application employs a modern, production-ready, decoupled architecture:
 
 ### Frontend Layer
+* **React 18** - Modern single-page application with dark theme UI
+  - Material-UI v5 components with custom theming
+  - Glass morphism effects and gradient animations
+  - React Router v6 for client-side routing
+  - Axios for HTTP client with JWT interceptors
+  - Context API for global authentication state
+  - Protected routes and role-based access control
+  
 * **Streamlit** - Reactive, data-centric UI with real-time updates
 * **Session Management** - JWT token-based authentication with automatic token refresh
 * **Interactive Components** - File upload, model status checking, result visualization with charts and roadmaps
@@ -1381,14 +1429,55 @@ python ingest_all_jobs.py
 # Or use winget (Windows 11)
 winget install Ollama.Ollama
 
-# Pull Mistral model (3.8GB download)
-ollama pull mistral:7b-q4
+# Pull TinyLlama model (lightweight, 1.1B parameters, ~637MB download)
+ollama pull tinyllama
+
+# Alternative: Use Mistral 7B for more advanced responses (3.8GB download)
+# ollama pull mistral:7b-q4
 
 # Verify installation
 ollama list
 ```
 
-#### 8️⃣ (Optional) Fine-Tune Career Advisor
+**Why TinyLLama?**
+- ⚡ **Lightweight**: Only 1.1B parameters vs Mistral's 7B
+- 🚀 **Fast**: Optimized for CPU inference, no GPU needed
+- 💾 **Memory Efficient**: Runs smoothly on 4GB RAM
+- 🎯 **Effective**: Excellent for RAG-based Q&A tasks
+- 🔒 **Privacy**: Runs 100% locally, no API calls
+
+#### 8️⃣ Setup React Frontend (Optional)
+```powershell
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies (~1-2 minutes, 1406 packages)
+npm install
+
+# Start development server
+npm run dev
+
+# Frontend will be available at http://localhost:3000
+```
+
+**React Frontend Features:**
+- 🌙 **Dark Theme**: Modern UI with glass morphism effects
+- ⚡ **Fast Performance**: Client-side routing with React Router
+- 🎨 **Material-UI**: Beautiful, responsive components
+- 🔐 **JWT Auth**: Secure authentication with protected routes
+- 📱 **Mobile Ready**: Fully responsive design
+
+**Available Scripts:**
+```bash
+npm start      # Start development server (port 3000)
+npm run dev    # Alternative start command
+npm run build  # Production build
+npm test       # Run tests
+```
+
+For complete React setup guide, see `REACT_QUICK_START.md`
+
+#### 9️⃣ (Optional) Fine-Tune Career Advisor
 
 **Option A: Local Training (GPU recommended)**
 ```bash
@@ -1708,6 +1797,38 @@ curl -X POST http://localhost:8000/rag-coach/query \
 ---
 
 ## 12. Usage Guide
+
+### 🌐 Frontend Options
+
+**Option 1: React Frontend (Recommended for Modern UI)**
+```powershell
+# Terminal 1: Start Backend
+cd E:\NextStepAI
+python backend_api.py
+
+# Terminal 2: Start React Frontend
+cd E:\NextStepAI\frontend
+npm run dev
+
+# Access at: http://localhost:3000
+```
+
+**Option 2: Streamlit Frontend (Simple & Fast)**
+```powershell
+# Terminal 1: Start Backend
+cd E:\NextStepAI
+python backend_api.py
+
+# Terminal 2: Start Streamlit
+cd E:\NextStepAI
+streamlit run app.py
+
+# Access at: http://localhost:8501
+```
+
+**Quick Start Batch Files:**
+- `START_REACT_SYSTEM.bat` - Start both backend + React frontend
+- `START_SYSTEM.bat` - Start both backend + Streamlit frontend
 
 ### 👤 Using Resume Analyzer
 
