@@ -829,8 +829,8 @@ def generate_layout_feedback(resume_text: str) -> str:
     
     # Try LLM-based feedback first
     if llm is not None:
-        prompt_template = """You are an expert resume reviewer for Applicant Tracking Systems (ATS). 
-        Analyze the structure and layout of the following resume text. Do not comment on the content (skills, experience quality). 
+        prompt_template = """You are an expert CV reviewer for Applicant Tracking Systems (ATS). 
+        Analyze the structure and layout of the following CV text. Do not comment on the content (skills, experience quality). 
         Focus on formatting, readability, section order, and overall ATS compatibility. Provide 3-5 actionable bullet points for improvement.
         Resume Text: --- {text} --- """
         prompt = ChatPromptTemplate.from_template(prompt_template)
@@ -941,9 +941,9 @@ async def analyze_resume(
     elif file.filename.endswith(".docx"): text = extract_text_from_docx(file_bytes)
     else: raise HTTPException(status_code=400, detail="Unsupported file type.")
     
-    # --- MODIFICATION: Skill extraction using LLM ---
-    print("Extracting skills using Gemini LLM...")
-    resume_skills = extract_skills_with_llm(text) # Replaced PhraseMatcher logic here
+    # --- MODIFICATION: Skill extraction ---
+    print("Extracting skills...")
+    resume_skills = extract_skills_with_llm(text) 
     if not resume_skills: 
         raise HTTPException(status_code=404, detail="Could not extract any relevant skills from the resume using AI.")
     
@@ -971,9 +971,21 @@ async def analyze_resume(
         for skill in skills_to_add
     ]
 
-    if current_user:
-        new_analysis = ResumeAnalysis(owner_id=current_user.id, recommended_job_title=recommended_job_title, match_percentage=int(match_percentage), skills_to_add=json.dumps(skills_to_add))
-        db.add(new_analysis); db.commit()
+    # Always persist the analysis for auditing and analytics. If the user is anonymous, owner_id will be NULL.
+    try:
+        new_analysis = ResumeAnalysis(
+            owner_id=current_user.id if current_user else None,
+            recommended_job_title=recommended_job_title,
+            match_percentage=int(match_percentage),
+            skills_to_add=json.dumps(skills_to_add),
+            resume_filename=file.filename,
+            total_skills_count=len(resume_skills)
+        )
+        db.add(new_analysis)
+        db.commit()
+    except Exception as _e:
+        # Log but do not fail the user-facing request
+        print(f"[WARN] Could not persist ResumeAnalysis: {_e}")
     
     return {
         "resume_skills": resume_skills,
@@ -992,11 +1004,16 @@ async def query_career_path(
     db: SessionLocal = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
+    import time
     generated_advice = ""
-    
+    response_time_seconds = None
+    model_used = "unknown"
+
     # Use Fine-tuned Model as Primary Advisor if loaded; otherwise use RAG immediately (NO BACKGROUND LOADING)
     try:
+        t0 = time.perf_counter()
         if finetuned_career_advisor and finetuned_career_advisor.is_loaded:
+            model_used = "finetuned"
             generated_advice = finetuned_career_advisor.generate_advice(
                 question=query.text,
                 max_length=200,
@@ -1007,10 +1024,13 @@ async def query_career_path(
             # DISABLED: Background loading causes timeout issues
             # Use RAG immediately for fast response
             if guide_rag_chain:
+                model_used = "rag"
                 generated_advice = guide_rag_chain.invoke(query.text)
                 print("[RAG] Using RAG model (fine-tuned model not loaded - use /load-model endpoint to load manually)")
             else:
                 generated_advice = "Career advisor is temporarily unavailable. Please try the RAG Coach tab or load the fine-tuned model manually."
+        t1 = time.perf_counter()
+        response_time_seconds = int(t1 - t0)
     except Exception as e:
         print(f"Error during advice generation: {e}")
         generated_advice = "Sorry, I encountered an error while generating career advice."
@@ -1029,9 +1049,19 @@ async def query_career_path(
 
     live_jobs = scrape_live_jobs(matched_job_group)
 
-    if current_user:
-        new_query = CareerQuery(owner_id=current_user.id, user_query_text=query.text, matched_job_group=matched_job_group)
-        db.add(new_query); db.commit()
+    # Persist the career query for analytics; owner_id may be NULL for anonymous users
+    try:
+        new_query = CareerQuery(
+            owner_id=current_user.id if current_user else None,
+            user_query_text=query.text,
+            matched_job_group=matched_job_group,
+            model_used=model_used,
+            response_time_seconds=response_time_seconds if response_time_seconds is not None else 0
+        )
+        db.add(new_query)
+        db.commit()
+    except Exception as _e:
+        print(f"[WARN] Could not persist CareerQuery: {_e}")
         
     return {
         "generative_advice": generated_advice,
@@ -1120,33 +1150,49 @@ async def get_model_load_status():
 
 # --- Dedicated Fine-tuned Model Endpoint ---
 @app.post("/career-advice-ai", response_model=CareerAdviceResponse, tags=["AI Career Advisor"])
-async def get_career_advice_ai(request: CareerAdviceRequest):
+async def get_career_advice_ai(
+    request: CareerAdviceRequest,
+    db: SessionLocal = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     """
     Get career advice using the fine-tuned Pythia model
     """
     try:
         # If the fine-tuned model is loaded, use it. Otherwise use RAG immediately (NO BACKGROUND LOADING)
+        import time
         advice = None
-        if finetuned_career_advisor and finetuned_career_advisor.is_loaded:
-            advice = finetuned_career_advisor.generate_advice(
-                question=request.text,
-                max_length=request.max_length,
-                temperature=request.temperature
-            )
-            print(f"[OK] Fine-tuned LLM generated response")
-        else:
-            # DISABLED: Background loading causes timeout and memory issues
-            # Use RAG immediately for fast, reliable responses
-            if guide_rag_chain:
-                try:
-                    advice = guide_rag_chain.invoke(request.text)
-                    print("[RAG] Using RAG model (fine-tuned model not loaded)")
-                    print("[INFO] To use fine-tuned model, call: POST /load-model")
-                except Exception as e:
-                    print(f"[ERROR] RAG invocation failed: {e}")
-                    advice = "Sorry, I encountered an error while generating career advice."
+        model_used = "unknown"
+        response_time_seconds = None
+        try:
+            t0 = time.perf_counter()
+            if finetuned_career_advisor and finetuned_career_advisor.is_loaded:
+                model_used = "finetuned"
+                advice = finetuned_career_advisor.generate_advice(
+                    question=request.text,
+                    max_length=request.max_length,
+                    temperature=request.temperature
+                )
+                print(f"[OK] Fine-tuned LLM generated response")
             else:
-                advice = "Career advisor is temporarily unavailable. Please use the RAG Coach tab."
+                # DISABLED: Background loading causes timeout and memory issues
+                # Use RAG immediately for fast, reliable responses
+                if guide_rag_chain:
+                    model_used = "rag"
+                    try:
+                        advice = guide_rag_chain.invoke(request.text)
+                        print("[RAG] Using RAG model (fine-tuned model not loaded)")
+                        print("[INFO] To use fine-tuned model, call: POST /load-model")
+                    except Exception as e:
+                        print(f"[ERROR] RAG invocation failed: {e}")
+                        advice = "Sorry, I encountered an error while generating career advice."
+                else:
+                    advice = "Career advisor is temporarily unavailable. Please use the RAG Coach tab."
+            t1 = time.perf_counter()
+            response_time_seconds = int(t1 - t0)
+        except Exception as e:
+            print(f"[ERROR] Advice generation failed: {e}")
+            advice = "Sorry, I encountered an error while generating career advice."
         
         # Get job matching for completeness
         from sentence_transformers import util as sentence_util 
@@ -1159,7 +1205,21 @@ async def get_career_advice_ai(request: CareerAdviceRequest):
             matched_job_group = request.text
 
         live_jobs = scrape_live_jobs(matched_job_group)
-        
+
+        # Persist the career query for analytics (anonymous allowed)
+        try:
+            saved_query = CareerQuery(
+                owner_id=current_user.id if current_user else None,
+                user_query_text=request.text,
+                matched_job_group=matched_job_group,
+                model_used=model_used,
+                response_time_seconds=response_time_seconds if response_time_seconds is not None else 0
+            )
+            db.add(saved_query)
+            db.commit()
+        except Exception as _e:
+            print(f"[WARN] Could not persist career-advice-ai query: {_e}")
+
         return CareerAdviceResponse(
             question=request.text,
             advice=advice,

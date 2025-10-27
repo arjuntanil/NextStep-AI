@@ -184,7 +184,7 @@ if st.session_state.token:
                 end_date = datetime(2025, 10, 26)
                 date_range = pd.date_range(start=start_date, end=end_date, freq='D')
                 
-                # Simulate realistic engagement data for the 3 main features
+                # Simulate realistic engagement data for CV Analyzer only
                 np.random.seed(42)  # For consistent demo data
                 
                 # CV Analyzer - Highest usage, steady growth
@@ -193,20 +193,6 @@ if st.session_state.token:
                 cv_analyzer_noise = np.random.normal(0, 3, len(date_range))
                 cv_analyzer_usage = cv_analyzer_base + cv_analyzer_trend + cv_analyzer_noise
                 cv_analyzer_usage = np.maximum(cv_analyzer_usage, 5)  # Minimum 5 users
-                
-                # AI Career Advisor - Medium usage, growing popularity
-                career_advisor_base = 10
-                career_advisor_trend = np.linspace(0, 20, len(date_range))
-                career_advisor_noise = np.random.normal(0, 2.5, len(date_range))
-                career_advisor_usage = career_advisor_base + career_advisor_trend + career_advisor_noise
-                career_advisor_usage = np.maximum(career_advisor_usage, 3)  # Minimum 3 users
-                
-                # Resume Analyzer (with JD) - Lower usage, steady increase
-                resume_analyzer_base = 8
-                resume_analyzer_trend = np.linspace(0, 15, len(date_range))
-                resume_analyzer_noise = np.random.normal(0, 2, len(date_range))
-                resume_analyzer_usage = resume_analyzer_base + resume_analyzer_trend + resume_analyzer_noise
-                resume_analyzer_usage = np.maximum(resume_analyzer_usage, 2)  # Minimum 2 users
                 
                 # Create the interactive line chart
                 fig_engagement = go.Figure()
@@ -220,34 +206,6 @@ if st.session_state.token:
                     line=dict(color='#636EFA', width=3),
                     marker=dict(size=6),
                     hovertemplate='<b>CV Analyzer</b><br>' +
-                                  'Date: %{x|%b %d, %Y}<br>' +
-                                  'Users: %{y:.0f}<br>' +
-                                  '<extra></extra>'
-                ))
-                
-                # AI Career Advisor line
-                fig_engagement.add_trace(go.Scatter(
-                    x=date_range,
-                    y=career_advisor_usage,
-                    mode='lines+markers',
-                    name='AI Career Advisor',
-                    line=dict(color='#EF553B', width=3),
-                    marker=dict(size=6),
-                    hovertemplate='<b>AI Career Advisor</b><br>' +
-                                  'Date: %{x|%b %d, %Y}<br>' +
-                                  'Users: %{y:.0f}<br>' +
-                                  '<extra></extra>'
-                ))
-                
-                # Resume Analyzer line
-                fig_engagement.add_trace(go.Scatter(
-                    x=date_range,
-                    y=resume_analyzer_usage,
-                    mode='lines+markers',
-                    name='Resume Analyzer (with JD)',
-                    line=dict(color='#00CC96', width=3),
-                    marker=dict(size=6),
-                    hovertemplate='<b>Resume Analyzer</b><br>' +
                                   'Date: %{x|%b %d, %Y}<br>' +
                                   'Users: %{y:.0f}<br>' +
                                   '<extra></extra>'
@@ -293,61 +251,23 @@ if st.session_state.token:
                 
                 st.plotly_chart(fig_engagement, use_container_width=True)
                 
-                # Calculate analytics
+                # Calculate analytics for CV Analyzer only
                 cv_total = int(cv_analyzer_usage.sum())
                 cv_avg = int(cv_analyzer_usage.mean())
                 cv_growth = int(cv_analyzer_usage[-1] - cv_analyzer_usage[0])
                 cv_growth_pct = (cv_growth / cv_analyzer_usage[0]) * 100
                 
-                career_total = int(career_advisor_usage.sum())
-                career_avg = int(career_advisor_usage.mean())
-                career_growth = int(career_advisor_usage[-1] - career_advisor_usage[0])
-                career_growth_pct = (career_growth / career_advisor_usage[0]) * 100
-                
-                resume_total = int(resume_analyzer_usage.sum())
-                resume_avg = int(resume_analyzer_usage.mean())
-                resume_growth = int(resume_analyzer_usage[-1] - resume_analyzer_usage[0])
-                resume_growth_pct = (resume_growth / resume_analyzer_usage[0]) * 100
-                
                 # Peak usage detection
                 cv_peak_day = date_range[cv_analyzer_usage.argmax()].strftime('%b %d')
                 cv_peak_value = int(cv_analyzer_usage.max())
                 
-                career_peak_day = date_range[career_advisor_usage.argmax()].strftime('%b %d')
-                career_peak_value = int(career_advisor_usage.max())
-                
-                resume_peak_day = date_range[resume_analyzer_usage.argmax()].strftime('%b %d')
-                resume_peak_value = int(resume_analyzer_usage.max())
-                
-                # Most popular feature
-                most_popular = max(
-                    [('CV Analyzer', cv_total), ('AI Career Advisor', career_total), ('Resume Analyzer', resume_total)],
-                    key=lambda x: x[1]
-                )
-                
-                # Fastest growing feature
-                fastest_growing = max(
-                    [('CV Analyzer', cv_growth_pct), ('AI Career Advisor', career_growth_pct), ('Resume Analyzer', resume_growth_pct)],
-                    key=lambda x: x[1]
-                )
-                
-                # Summary metrics below the chart
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("📄 CV Analyzer", f"{cv_total} total uses", 
-                             delta=f"+{cv_growth_pct:.0f}% growth")
-                    st.caption(f"📊 Avg: {cv_avg} uses/day | 🔥 Peak: {cv_peak_value} on {cv_peak_day}")
-                with col2:
-                    st.metric("💬 AI Career Advisor", f"{career_total} total uses", 
-                             delta=f"+{career_growth_pct:.0f}% growth")
-                    st.caption(f"📊 Avg: {career_avg} uses/day | 🔥 Peak: {career_peak_value} on {career_peak_day}")
-                with col3:
-                    st.metric("🧑‍💼 Resume Analyzer", f"{resume_total} total uses", 
-                             delta=f"+{resume_growth_pct:.0f}% growth")
-                    st.caption(f"📊 Avg: {resume_avg} uses/day | 🔥 Peak: {resume_peak_value} on {resume_peak_day}")
+                # Summary metric for CV Analyzer only
+                #st.metric("📄 CV Analyzer", f"{cv_total} total uses", 
+                         #delta=f"+{cv_growth_pct:.0f}% growth")
+                #st.caption(f"📊 Avg: {cv_avg} uses/day | 🔥 Peak: {cv_peak_value} on {cv_peak_day}")
                 
                 # Advanced Analytical Insights
-                st.markdown("### 🎯 Data-Driven Insights & Recommendations")
+                #st.markdown("### 🎯 Data-Driven Insights & Recommendations")
                 
                 # Calculate week-over-week growth
                 sept_week1 = cv_analyzer_usage[:7].mean()
@@ -355,75 +275,36 @@ if st.session_state.token:
                 wow_growth = ((oct_week3 - sept_week1) / sept_week1) * 100
                 
                 # User engagement score (composite metric)
-                total_engagement = cv_total + career_total + resume_total
+                total_engagement = cv_total
                 engagement_per_day = total_engagement / len(date_range)
                 
-                # Feature diversity score (how evenly distributed usage is)
-                usage_distribution = [cv_total, career_total, resume_total]
-                diversity_score = (min(usage_distribution) / max(usage_distribution)) * 100
+                # Feature diversity score - 100% for single feature
+                diversity_score = 100.0
                 
-                col1, col2 = st.columns(2)
                 
-                with col1:
-                    st.success(f"""
-                    **� Growth Analysis**
-                    - **Most Popular Feature:** {most_popular[0]} ({most_popular[1]:,} total uses)
-                    - **Fastest Growing:** {fastest_growing[0]} (+{fastest_growing[1]:.1f}% growth)
-                    - **Week-over-Week Growth:** +{wow_growth:.1f}%
-                    - **Daily Engagement Average:** {engagement_per_day:.0f} feature uses
-                    """)
-                
-                with col2:
-                    # Determine health status
-                    if diversity_score >= 60:
-                        health_status = "🟢 Excellent"
-                        health_msg = "Users are actively engaging with all features"
-                    elif diversity_score >= 40:
-                        health_status = "🟡 Good"
-                        health_msg = "Consider promoting underutilized features"
-                    else:
-                        health_status = "🟠 Needs Attention"
-                        health_msg = "Focus on balancing feature adoption"
-                    
-                    st.info(f"""
-                    **💡 Platform Health**
-                    - **Status:** {health_status}
-                    - **Feature Diversity Score:** {diversity_score:.0f}%
-                    - **Recommendation:** {health_msg}
-                    - **Peak Usage Day:** {cv_peak_day} (highest traffic)
-                    """)
                 
                 # Actionable recommendations
-                st.markdown("#### 🚀 Strategic Recommendations")
+                #st.markdown("#### 🚀 Strategic Recommendations")
                 
                 recommendations = []
                 
                 # Recommendation 1: Based on growth
-                if fastest_growing[1] > 100:
-                    recommendations.append(f"✅ **Scale Infrastructure:** {fastest_growing[0]} is growing rapidly (+{fastest_growing[1]:.0f}%). Prepare for increased load.")
+                # if cv_growth_pct > 100:
+                #     recommendations.append(f"✅ **Scale Infrastructure:** CV Analyzer is growing rapidly (+{cv_growth_pct:.0f}%). Prepare for increased load.")
                 
-                # Recommendation 2: Based on diversity
-                if diversity_score < 50:
-                    least_used = min([('CV Analyzer', cv_total), ('AI Career Advisor', career_total), ('Resume Analyzer', resume_total)], key=lambda x: x[1])
-                    recommendations.append(f"📢 **Marketing Campaign:** Promote {least_used[0]} to improve feature adoption (currently {(least_used[1]/total_engagement*100):.0f}% of usage).")
+                # Recommendation 2: Peak usage optimization
+                #recommendations.append(f"⏰ **Resource Optimization:** Peak usage occurs around {cv_peak_day}. Schedule maintenance and updates during low-traffic periods.")
                 
-                # Recommendation 3: Peak usage optimization
-                recommendations.append(f"⏰ **Resource Optimization:** Peak usage occurs around {cv_peak_day}. Schedule maintenance and updates during low-traffic periods.")
+                # # Recommendation 3: User engagement
+                # if engagement_per_day < 50:
+                #     recommendations.append(f"📧 **Engagement Strategy:** Daily engagement is {engagement_per_day:.0f} uses. Consider email campaigns or push notifications to increase activity.")
+                # else:
+                #     recommendations.append(f"🎉 **Strong Engagement:** Daily engagement is healthy at {engagement_per_day:.0f} uses. Maintain current user experience quality.")
                 
-                # Recommendation 4: User engagement
-                if engagement_per_day < 50:
-                    recommendations.append(f"📧 **Engagement Strategy:** Daily engagement is {engagement_per_day:.0f} uses. Consider email campaigns or push notifications to increase activity.")
-                else:
-                    recommendations.append(f"🎉 **Strong Engagement:** Daily engagement is healthy at {engagement_per_day:.0f} uses. Maintain current user experience quality.")
+                # for i, rec in enumerate(recommendations, 1):
+                #     st.markdown(f"{i}. {rec}")
                 
-                # Recommendation 5: Feature development
-                if cv_total > (career_total + resume_total):
-                    recommendations.append(f"🔧 **Feature Enhancement:** CV Analyzer dominates usage ({(cv_total/total_engagement*100):.0f}%). Consider adding advanced features to AI Career Advisor and Resume Analyzer.")
-                
-                for i, rec in enumerate(recommendations, 1):
-                    st.markdown(f"{i}. {rec}")
-                
-                st.markdown("---")
+                # st.markdown("---")
                 
                 # ============================================
                 # SECTION 3: JOB MARKET INSIGHTS
@@ -879,7 +760,7 @@ with tabs[1]:
     
     if user_query:
         # Show different spinner messages based on model selection
-        spinner_msg = "⚡ EXTREME SPEED: Generating in 5-15 seconds..." if use_finetuned else "🧠 Generating career advice with RAG system..."
+        spinner_msg = "⚡ Generating..." if use_finetuned else "🧠 Generating career advice with RAG system..."
         
         with st.spinner(spinner_msg):
             try:
@@ -1315,8 +1196,8 @@ if len(tabs) == 4:
                 st.error(f"Error fetching history: {e}")
         
         if st.session_state.history:
-            # Resume Analyses History
-            st.subheader("📄 Past Resume Analyses")
+            # Resume Analyses History - ONLY show CV Analysis history
+            st.subheader("📄 Past CV Analyses")
             analyses = st.session_state.history.get("analyses", [])
             if analyses:
                 for item in analyses:
@@ -1324,31 +1205,4 @@ if len(tabs) == 4:
                         skills = json.loads(item.get('skills_to_add', '[]')) # Use .get() for safety
                         st.write("Skills to add:", ", ".join(f"`{s}`" for s in skills) if skills else "No skills needed!")
             else:
-                st.info("No resume analyses found.")
-            
-            st.markdown("---")
-            
-            # Career Advisor Queries History
-            st.subheader("💬 Past AI Career Advisor Queries")
-            queries = st.session_state.history.get("queries", [])
-            if queries:
-                for item in queries:
-                    st.info(f"You asked about **'{item['user_query_text']}'** ➡️ Matched to **{item['matched_job_group']}**.")
-            else:
-                st.info("No career queries found.")
-            
-            st.markdown("---")
-            
-            # Resume Analyzer using JD History
-            st.subheader("🧑‍💼 Past Resume Analysis (with JD)")
-            rag_queries = st.session_state.history.get("rag_queries", [])
-            if rag_queries:
-                for item in rag_queries:
-                    with st.expander(f"Q: {item['question'][:80]}..." if len(item['question']) > 80 else f"Q: {item['question']}"):
-                        st.markdown("**Answer:**")
-                        st.write(item['answer'])
-                        sources = json.loads(item.get('sources', '[]'))
-                        if sources:
-                            st.caption(f"📄 Sources: {', '.join(sources)}")
-            else:
-                st.info("No resume analysis queries found.")
+                st.info("No CV analyses found.")
