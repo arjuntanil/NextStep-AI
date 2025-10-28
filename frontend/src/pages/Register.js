@@ -62,13 +62,14 @@ const Register = () => {
         }}
       >
         <Paper 
-          elevation={0} 
-          className="glass-effect glow"
+          elevation={0}
           sx={{ 
             p: 4, 
             width: '100%', 
             borderRadius: 3,
-            border: '1px solid rgba(118, 75, 162, 0.3)',
+            border: '1px solid #E5E7EB',
+            background: '#FFFFFF',
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
           }}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -77,7 +78,6 @@ const Register = () => {
               bgcolor: 'secondary.main', 
               width: 56, 
               height: 56,
-              boxShadow: '0 0 20px rgba(118, 75, 162, 0.5)',
             }}>
               <PersonAddIcon sx={{ fontSize: 32 }} />
             </Avatar>
@@ -120,19 +120,6 @@ const Register = () => {
                 autoFocus
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
               />
               <TextField
                 margin="normal"
@@ -144,19 +131,6 @@ const Register = () => {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
               />
               <TextField
                 margin="normal"
@@ -168,19 +142,6 @@ const Register = () => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
               />
               <TextField
                 margin="normal"
@@ -192,19 +153,6 @@ const Register = () => {
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '& fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.3)',
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(102, 126, 234, 0.5)',
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                  },
-                }}
               />
               <Button
                 type="submit"
@@ -214,19 +162,6 @@ const Register = () => {
                   mt: 3, 
                   mb: 2, 
                   py: 1.5,
-                  fontSize: '1rem',
-                  fontWeight: 600,
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #7e91f5 0%, #8b5fb8 100%)',
-                    boxShadow: '0 6px 30px rgba(102, 126, 234, 0.6)',
-                    transform: 'translateY(-2px)',
-                  },
-                  '&:disabled': {
-                    background: 'rgba(102, 126, 234, 0.3)',
-                  },
-                  transition: 'all 0.3s ease',
                 }}
                 disabled={loading}
               >

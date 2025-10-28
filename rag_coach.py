@@ -241,26 +241,47 @@ class RAGCoachSystem:
                 continue
             
             try:
-                # Load PDF using LangChain's PyPDFLoader
+                # Verify file is readable and not empty
+                file_size = os.path.getsize(pdf_path)
+                if file_size == 0:
+                    logger.error(f"  ❌ File is empty: {pdf_path}")
+                    continue
+                    
+                logger.info(f"  📄 Processing: {os.path.basename(pdf_path)} ({file_size} bytes)...")
+                
+                # Load PDF using LangChain's PyPDFLoader with error handling
                 loader = PyPDFLoader(pdf_path)
                 documents = loader.load()
                 
+                if not documents:
+                    logger.error(f"  ❌ No pages extracted from {pdf_path}")
+                    continue
+                
                 # Get full text to detect document type
                 full_text = "\n".join([doc.page_content for doc in documents])
+                
+                if not full_text or len(full_text.strip()) == 0:
+                    logger.error(f"  ❌ No text content in {pdf_path} - may be scanned image")
+                    continue
+                
                 filename = os.path.basename(pdf_path)
                 doc_type = _detect_document_type(full_text, filename)
                 
                 # Add enhanced metadata to identify source AND document type
                 for doc in documents:
-                    doc.metadata['source'] = filename
+                    doc.metadata['source'] = pdf_path  # Use full path for matching
+                    doc.metadata['filename'] = filename
                     doc.metadata['doc_type'] = doc_type
                     doc.metadata['doc_index'] = i
                 
                 all_documents.extend(documents)
-                logger.info(f"  ✅ Loaded: {filename} ({len(documents)} pages) [Type: {doc_type}]")
+                logger.info(f"  ✅ Loaded: {filename} ({len(documents)} pages, {len(full_text)} chars) [Type: {doc_type}]")
                 
             except Exception as e:
                 logger.error(f"  ❌ Error loading {pdf_path}: {e}")
+                # Log more detailed error for debugging
+                import traceback
+                logger.error(f"     Details: {traceback.format_exc()}")
                 continue
         
         logger.info(f"✅ Total documents loaded: {len(all_documents)}")

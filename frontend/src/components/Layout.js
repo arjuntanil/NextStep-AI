@@ -4,226 +4,297 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   AppBar,
   Box,
-  CssBaseline,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
   Toolbar,
   Typography,
   Button,
-  Avatar,
+  Container,
   Menu,
   MenuItem,
-  Divider,
+  IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  Description as DescriptionIcon,
-  Psychology as PsychologyIcon,
-  Chat as ChatIcon,
-  History as HistoryIcon,
-  AdminPanelSettings as AdminIcon,
+  Person as PersonIcon,
   Logout as LogoutIcon,
-  AccountCircle,
 } from '@mui/icons-material';
 
-const drawerWidth = 240;
-
 const Layout = () => {
+  const [featuresAnchor, setFeaturesAnchor] = useState(null);
+  const [userAnchor, setUserAnchor] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
   const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  const handleFeaturesClick = (event) => {
+    setFeaturesAnchor(event.currentTarget);
   };
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleFeaturesClose = () => {
+    setFeaturesAnchor(null);
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
+  const handleUserClick = (event) => {
+    setUserAnchor(event.currentTarget);
+  };
+
+  const handleUserClose = () => {
+    setUserAnchor(null);
   };
 
   const handleLogout = () => {
-    handleMenuClose();
+    handleUserClose();
     logout();
     navigate('/login');
   };
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'CV Analyzer', icon: <DescriptionIcon />, path: '/cv-analyzer' },
-    { text: 'Career Advisor', icon: <PsychologyIcon />, path: '/career-advisor' },
-    { text: 'RAG Coach', icon: <ChatIcon />, path: '/rag-coach' },
-    { text: 'History', icon: <HistoryIcon />, path: '/history' },
+  const handleMobileToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+
+  const navigateToPage = (path) => {
+    navigate(path);
+    handleFeaturesClose();
+    setMobileOpen(false);
+  };
+
+  const features = [
+    { name: 'CV Analyzer', path: '/cv-analyzer' },
+    { name: 'Career Advisor', path: '/career-advisor' },
+    { name: 'RAG Coach', path: '/rag-coach' },
+    { name: 'History', path: '/history' },
   ];
 
   if (isAdmin()) {
-    menuItems.push({ text: 'Admin Panel', icon: <AdminIcon />, path: '/admin' });
+    features.push({ name: 'Admin Panel', path: '/admin' });
   }
 
-  const drawer = (
-    <div>
-      <Toolbar sx={{ 
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderBottom: '1px solid rgba(102, 126, 234, 0.3)',
-      }}>
-        <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 'bold', color: 'white' }}>
-          ✨ NextStepAI
-        </Typography>
-      </Toolbar>
-      <Divider sx={{ borderColor: 'rgba(102, 126, 234, 0.2)' }} />
-      <List sx={{ pt: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ px: 1, mb: 0.5 }}>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => {
-                navigate(item.path);
-                setMobileOpen(false);
-              }}
-              sx={{
-                borderRadius: 2,
-                '&.Mui-selected': {
-                  background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%)',
-                  borderLeft: '3px solid #667eea',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.3) 0%, rgba(118, 75, 162, 0.3) 100%)',
-                  },
-                },
-                '&:hover': {
-                  background: 'rgba(102, 126, 234, 0.1)',
-                },
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Header */}
+      <AppBar 
+        position="sticky" 
+        elevation={1}
+        sx={{ 
+          bgcolor: 'white', 
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Container maxWidth="xl">
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+            {/* Logo */}
+            <Box 
+              onClick={() => navigate('/')}
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                '&:hover': { opacity: 0.8 },
               }}
             >
-              <ListItemIcon sx={{ 
-                color: location.pathname === item.path ? 'primary.main' : 'text.secondary',
-                minWidth: 40,
-              }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={item.text}
-                primaryTypographyProps={{
-                  fontWeight: location.pathname === item.path ? 600 : 400,
+              <Typography
+                variant="h5"
+                sx={{
+                  fontWeight: 800,
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  letterSpacing: '-0.5px',
+                  fontFamily: 'Space Grotesk',
                 }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </div>
-  );
+              >
+                NextStepAI
+              </Typography>
+            </Box>
 
-  return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar
-        position="fixed"
-        elevation={0}
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-          background: 'rgba(19, 24, 66, 0.8)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(102, 126, 234, 0.2)',
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            Your Career Navigator
-          </Typography>
-          <Button
-            color="inherit"
-            startIcon={<AccountCircle />}
-            onClick={handleMenuOpen}
-          >
-            {user?.email || 'User'}
-          </Button>
-          <Menu
-            anchorEl={anchorEl}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            <MenuItem disabled>
-              <Typography variant="body2" color="text.secondary">
-                {user?.email}
-              </Typography>
-            </MenuItem>
-            <MenuItem disabled>
-              <Typography variant="body2" color="text.secondary">
-                Role: {user?.role || 'user'}
-              </Typography>
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleLogout}>
-              <ListItemIcon>
-                <LogoutIcon fontSize="small" />
-              </ListItemIcon>
-              Logout
-            </MenuItem>
-          </Menu>
-        </Toolbar>
+            {/* Desktop Navigation */}
+            <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 1 }}>
+              <Button
+                onClick={() => navigate('/')}
+                sx={{
+                  color: location.pathname === '/' ? 'primary.main' : 'text.primary',
+                  fontWeight: 600,
+                  px: 2,
+                }}
+              >
+                Home
+              </Button>
+              <Button
+                onClick={handleFeaturesClick}
+                sx={{
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  px: 2,
+                }}
+              >
+                Features
+              </Button>
+              <Menu
+                anchorEl={featuresAnchor}
+                open={Boolean(featuresAnchor)}
+                onClose={handleFeaturesClose}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    minWidth: 200,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  },
+                }}
+              >
+                {features.map((feature) => (
+                  <MenuItem
+                    key={feature.path}
+                    onClick={() => navigateToPage(feature.path)}
+                    selected={location.pathname === feature.path}
+                    sx={{
+                      py: 1.5,
+                      fontWeight: 500,
+                      '&.Mui-selected': {
+                        bgcolor: 'primary.light',
+                        color: 'white',
+                        '&:hover': {
+                          bgcolor: 'primary.main',
+                        },
+                      },
+                    }}
+                  >
+                    {feature.name}
+                  </MenuItem>
+                ))}
+              </Menu>
+              <Button
+                onClick={() => navigate('/about')}
+                sx={{
+                  color: location.pathname === '/about' ? 'primary.main' : 'text.primary',
+                  fontWeight: 600,
+                  px: 2,
+                }}
+              >
+                About
+              </Button>
+
+              {/* User Menu */}
+              <Button
+                onClick={handleUserClick}
+                startIcon={<PersonIcon />}
+                variant="outlined"
+                sx={{
+                  ml: 2,
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderWidth: 2,
+                  },
+                }}
+              >
+                {user?.email?.split('@')[0] || 'User'}
+              </Button>
+              <Menu
+                anchorEl={userAnchor}
+                open={Boolean(userAnchor)}
+                onClose={handleUserClose}
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    minWidth: 180,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                  },
+                }}
+              >
+                <MenuItem disabled sx={{ opacity: 1, fontWeight: 600 }}>
+                  {user?.email}
+                </MenuItem>
+                <MenuItem disabled sx={{ opacity: 1 }}>
+                  Role: {user?.role || 'user'}
+                </MenuItem>
+                <MenuItem onClick={handleLogout} sx={{ color: 'error.main', fontWeight: 600 }}>
+                  <LogoutIcon sx={{ mr: 1, fontSize: 20 }} />
+                  Logout
+                </MenuItem>
+              </Menu>
+            </Box>
+
+            {/* Mobile Menu Icon */}
+            <IconButton
+              sx={{ display: { xs: 'flex', md: 'none' } }}
+              onClick={handleMobileToggle}
+            >
+              <MenuIcon />
+            </IconButton>
+          </Toolbar>
+        </Container>
       </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          minHeight: '100vh',
-          backgroundColor: 'background.default',
+
+      {/* Mobile Drawer */}
+      <Drawer
+        anchor="right"
+        open={mobileOpen}
+        onClose={handleMobileToggle}
+        PaperProps={{
+          sx: { width: 280 },
         }}
       >
-        <Toolbar />
-        <Outlet />
+        <Box sx={{ p: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
+            Menu
+          </Typography>
+          <List>
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => navigateToPage('/')}>
+                <ListItemText primary="Home" primaryTypographyProps={{ fontWeight: 600 }} />
+              </ListItemButton>
+            </ListItem>
+            {features.map((feature) => (
+              <ListItem key={feature.path} disablePadding>
+                <ListItemButton onClick={() => navigateToPage(feature.path)}>
+                  <ListItemText primary={feature.name} primaryTypographyProps={{ fontWeight: 600 }} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+            <ListItem disablePadding>
+              <ListItemButton onClick={() => navigateToPage('/about')}>
+                <ListItemText primary="About" primaryTypographyProps={{ fontWeight: 600 }} />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding sx={{ mt: 2 }}>
+              <ListItemButton onClick={handleLogout} sx={{ color: 'error.main' }}>
+                <LogoutIcon sx={{ mr: 1 }} />
+                <ListItemText primary="Logout" primaryTypographyProps={{ fontWeight: 600 }} />
+              </ListItemButton>
+            </ListItem>
+          </List>
+        </Box>
+      </Drawer>
+
+      {/* Main Content */}
+      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', py: 4 }}>
+        <Container maxWidth="xl">
+          <Outlet />
+        </Container>
+      </Box>
+
+      {/* Footer */}
+      <Box
+        component="footer"
+        sx={{
+          py: 3,
+          px: 2,
+          mt: 'auto',
+          bgcolor: '#f9fafb',
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Container maxWidth="xl">
+          <Typography variant="body2" color="text.secondary" align="center">
+            © {new Date().getFullYear()} NextStepAI. All rights reserved.
+          </Typography>
+        </Container>
       </Box>
     </Box>
   );

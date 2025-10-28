@@ -5,235 +5,294 @@ import {
   Grid,
   Card,
   CardContent,
-  CardActions,
   Typography,
   Button,
   Box,
   Paper,
 } from '@mui/material';
 import {
-  Description as DescriptionIcon,
-  Psychology as PsychologyIcon,
-  Chat as ChatIcon,
-  TrendingUp as TrendingUpIcon,
-  WorkOutline as WorkIcon,
-  School as SchoolIcon,
+  Description as CVIcon,
+  Psychology as AdvisorIcon,
+  Chat as CoachIcon,
+  TrendingUp as GrowthIcon,
+  Work as JobIcon,
+  School as SkillIcon,
+  ArrowForward as ArrowIcon,
 } from '@mui/icons-material';
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  const features = [
+  const mainFeatures = [
     {
       title: 'CV Analyzer',
-      description: 'Upload your resume and get AI-powered analysis with job recommendations tailored to your skills.',
-      icon: <DescriptionIcon sx={{ fontSize: 60, color: 'primary.main' }} />,
+      description: 'Upload your resume and get AI-powered analysis with personalized job recommendations and skill insights.',
+      icon: <CVIcon sx={{ fontSize: 50 }} />,
       path: '/cv-analyzer',
-      color: '#667eea',
+      color: '#1e3a8a',
     },
     {
       title: 'Career Advisor',
-      description: 'Get personalized career guidance and advice from our fine-tuned AI model.',
-      icon: <PsychologyIcon sx={{ fontSize: 60, color: 'secondary.main' }} />,
+      description: 'Get expert career guidance from our fine-tuned AI model. Ask anything about your career path.',
+      icon: <AdvisorIcon sx={{ fontSize: 50 }} />,
       path: '/career-advisor',
-      color: '#764ba2',
+      color: '#3b82f6',
     },
     {
       title: 'RAG Coach',
-      description: 'Upload your documents and get contextual answers powered by Retrieval-Augmented Generation.',
-      icon: <ChatIcon sx={{ fontSize: 60, color: 'success.main' }} />,
+      description: 'Upload documents and get contextual answers using advanced Retrieval-Augmented Generation technology.',
+      icon: <CoachIcon sx={{ fontSize: 50 }} />,
       path: '/rag-coach',
-      color: '#43a047',
+      color: '#0ea5e9',
     },
   ];
 
-  const stats = [
+  const benefits = [
     {
-      title: 'Job Matches',
-      value: 'AI-Powered',
-      icon: <WorkIcon sx={{ fontSize: 40 }} />,
-      color: '#667eea',
+      icon: <GrowthIcon sx={{ fontSize: 40, color: '#1e3a8a' }} />,
+      title: 'Accelerate Growth',
+      description: 'Fast-track your career with data-driven insights',
     },
     {
-      title: 'Career Growth',
-      value: 'Personalized',
-      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
-      color: '#764ba2',
+      icon: <JobIcon sx={{ fontSize: 40, color: '#3b82f6' }} />,
+      title: 'Find Perfect Jobs',
+      description: 'AI-matched opportunities tailored to your skills',
     },
     {
+      icon: <SkillIcon sx={{ fontSize: 40, color: '#0ea5e9' }} />,
       title: 'Skill Development',
-      value: 'Guided',
-      icon: <SchoolIcon sx={{ fontSize: 40 }} />,
-      color: '#43a047',
+      description: 'Identify and bridge skill gaps effectively',
     },
   ];
 
   return (
-    <Container maxWidth="lg" className="fade-in">
-      <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="h3" 
-          gutterBottom 
-          className="gradient-text"
-          sx={{ fontWeight: 700 }}
-        >
-          Welcome to NextStepAI! 👋
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
-          Your intelligent career navigation platform
-        </Typography>
+    <Container maxWidth="xl">
+      {/* Hero Section */}
+      <Box
+        sx={{
+          background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+          borderRadius: 3,
+          p: { xs: 4, md: 8 },
+          mb: 6,
+          color: 'white',
+          position: 'relative',
+          overflow: 'hidden',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.3), transparent 50%), radial-gradient(circle at 70% 50%, rgba(14, 165, 233, 0.3), transparent 50%)',
+            animation: 'floatUpDown 10s ease-in-out infinite',
+          },
+        }}
+      >
+        <Grid container spacing={4} alignItems="center">
+          <Grid item xs={12} md={7}>
+            <Typography variant="h2" sx={{ fontWeight: 700, mb: 2 }}>
+              Navigate Your Career with AI
+            </Typography>
+            <Typography variant="h6" sx={{ mb: 4, opacity: 0.95, lineHeight: 1.7 }}>
+              Unlock your professional potential with intelligent career guidance, resume analysis, and personalized job recommendations powered by advanced AI.
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                size="large"
+                onClick={() => navigate('/cv-analyzer')}
+                sx={{
+                  bgcolor: 'white',
+                  color: '#ff6b35',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  '&:hover': {
+                    bgcolor: '#f9fafb',
+                  },
+                }}
+              >
+                Analyze Your CV
+              </Button>
+              <Button
+                variant="outlined"
+                size="large"
+                onClick={() => navigate('/career-advisor')}
+                sx={{
+                  borderColor: 'white',
+                  color: 'white',
+                  fontWeight: 700,
+                  px: 4,
+                  py: 1.5,
+                  borderWidth: 2,
+                  '&:hover': {
+                    borderColor: 'white',
+                    bgcolor: 'rgba(255,255,255,0.1)',
+                    borderWidth: 2,
+                  },
+                }}
+              >
+                Get Career Advice
+              </Button>
+            </Box>
+          </Grid>
+          <Grid item xs={12} md={5} sx={{ display: { xs: 'none', md: 'block' } }}>
+            <Box
+              sx={{
+                fontSize: '200px',
+                textAlign: 'center',
+                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))',
+                animation: 'floatUpDown 6s ease-in-out infinite',
+              }}
+            >
+              <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="100" cy="100" r="80" fill="white" opacity="0.2"/>
+                <path d="M100 40 L120 80 L160 90 L130 120 L140 160 L100 140 L60 160 L70 120 L40 90 L80 80 Z" fill="white"/>
+              </svg>
+            </Box>
+          </Grid>
+        </Grid>
       </Box>
 
-      {/* Stats Section */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        {stats.map((stat, index) => (
-          <Grid item xs={12} md={4} key={index}>
-            <Paper
-              elevation={0}
-              className="glass-effect float-animation"
-              sx={{
-                p: 3,
-                display: 'flex',
-                alignItems: 'center',
-                background: `linear-gradient(135deg, ${stat.color}33 0%, ${stat.color}11 100%)`,
-                borderLeft: `4px solid ${stat.color}`,
-                border: `1px solid ${stat.color}44`,
-                borderRadius: 3,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: `0 8px 24px ${stat.color}33`,
-                },
-              }}
-            >
-              <Box sx={{ color: stat.color, mr: 2 }}>
-                {stat.icon}
-              </Box>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  {stat.value}
+      {/* Benefits Section */}
+      <Box sx={{ mb: 8 }}>
+        <Grid container spacing={3}>
+          {benefits.map((benefit, index) => (
+            <Grid item xs={12} md={4} key={index}>
+              <Paper
+                sx={{
+                  p: 3,
+                  textAlign: 'center',
+                  height: '100%',
+                  transition: 'transform 0.3s',
+                  '&:hover': {
+                    transform: 'translateY(-8px)',
+                  },
+                }}
+              >
+                <Box sx={{ mb: 2 }}>{benefit.icon}</Box>
+                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                  {benefit.title}
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  {stat.title}
+                  {benefit.description}
                 </Typography>
-              </Box>
-            </Paper>
-          </Grid>
-        ))}
-      </Grid>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
-      {/* Features Section */}
-      <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 700 }}>
-        Explore Our Features
-      </Typography>
-      <Grid container spacing={4}>
-        {features.map((feature, index) => (
-          <Grid item xs={12} md={4} key={index}>
-            <Card
-              elevation={0}
-              className="glass-effect glow"
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                borderRadius: 3,
-                border: `1px solid ${feature.color}33`,
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateY(-12px)',
-                  boxShadow: `0 12px 40px ${feature.color}44`,
-                  border: `1px solid ${feature.color}66`,
-                },
-              }}
-            >
-              <CardContent sx={{ flexGrow: 1, textAlign: 'center', pt: 4 }}>
-                <Box sx={{ mb: 2 }}>
-                  {feature.icon}
-                </Box>
-                <Typography gutterBottom variant="h5" component="div" sx={{ fontWeight: 700 }}>
-                  {feature.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {feature.description}
-                </Typography>
-              </CardContent>
-              <CardActions sx={{ justifyContent: 'center', pb: 3 }}>
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={() => navigate(feature.path)}
-                  sx={{
-                    background: `linear-gradient(135deg, ${feature.color} 0%, ${feature.color}dd 100%)`,
-                    px: 4,
-                    py: 1.5,
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    boxShadow: `0 4px 16px ${feature.color}44`,
-                    '&:hover': {
-                      background: `linear-gradient(135deg, ${feature.color}dd 0%, ${feature.color}bb 100%)`,
-                      boxShadow: `0 6px 24px ${feature.color}66`,
-                      transform: 'translateY(-2px)',
-                    },
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  Get Started
-                </Button>
-              </CardActions>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+      {/* Our Core AI Features - Moved after Hero */}
+      <Box sx={{ mb: 8 }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, textAlign: 'center', fontFamily: 'Space Grotesk' }}>
+          Our Core AI Features
+        </Typography>
+        <Typography variant="h6" color="text.secondary" sx={{ mb: 6, textAlign: 'center' }}>
+          Everything you need to supercharge your career journey
+        </Typography>
+        <Grid container spacing={4}>
+          {mainFeatures.map((feature, index) => (
+            <Grid item xs={12} md={4} key={index}>
+              <Card
+                sx={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s',
+                  border: `2px solid ${feature.color}20`,
+                  '&:hover': {
+                    transform: 'translateY(-12px)',
+                    boxShadow: `0 12px 24px ${feature.color}30`,
+                    borderColor: feature.color,
+                  },
+                }}
+              >
+                <CardContent sx={{ flexGrow: 1, p: 4 }}>
+                  <Box
+                    sx={{
+                      width: 100,
+                      height: 100,
+                      mb: 3,
+                      mx: 'auto',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      borderRadius: '50%',
+                      background: `${feature.color}15`,
+                      animation: 'morphShape 8s ease-in-out infinite, floatUpDown 6s ease-in-out infinite',
+                    }}
+                  >
+                    <Box sx={{ color: feature.color }}>
+                      {feature.icon}
+                    </Box>
+                  </Box>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontFamily: 'Space Grotesk' }}>
+                    {feature.title}
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center', lineHeight: 1.7 }}>
+                    {feature.description}
+                  </Typography>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={() => navigate(feature.path)}
+                    endIcon={<ArrowIcon />}
+                    sx={{
+                      bgcolor: feature.color,
+                      fontWeight: 600,
+                      py: 1.5,
+                      fontFamily: 'Space Grotesk',
+                      '&:hover': {
+                        bgcolor: feature.color,
+                        opacity: 0.9,
+                      },
+                    }}
+                  >
+                    Get Started
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
 
-      {/* Info Section */}
-      <Box sx={{ mt: 6, mb: 4 }}>
-        <Paper 
-          elevation={0} 
-          className="glass-effect"
-          sx={{ 
-            p: 4, 
-            borderRadius: 3,
-            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%)',
-            border: '1px solid rgba(102, 126, 234, 0.3)',
+      {/* CTA Section */}
+      <Paper
+        sx={{
+          p: 6,
+          textAlign: 'center',
+          bgcolor: '#eff6ff',
+          border: '2px dashed #1e3a8a',
+        }}
+      >
+        <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
+          Ready to Transform Your Career?
+        </Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
+          Join thousands of professionals who are already using NextStepAI to accelerate their career growth and land their dream jobs.
+        </Typography>
+        <Button
+          variant="contained"
+          size="large"
+          onClick={() => navigate('/cv-analyzer')}
+          sx={{
+            bgcolor: '#1e3a8a',
+            fontWeight: 700,
+            px: 6,
+            py: 2,
+            fontSize: '1.1rem',
+            fontFamily: 'Space Grotesk',
+            '&:hover': {
+              bgcolor: '#1e40af',
+            },
           }}
         >
-          <Typography variant="h5" gutterBottom sx={{ fontWeight: 700 }}>
-            🚀 How It Works
-          </Typography>
-          <Grid container spacing={3} sx={{ mt: 1 }}>
-            <Grid item xs={12} md={4}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main', mb: 1 }}>
-                  1. Upload & Analyze
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Start by uploading your CV or resume. Our AI will analyze your skills and experience.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: 'secondary.main', mb: 1 }}>
-                  2. Get Insights
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Receive personalized job recommendations and career guidance based on your profile.
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main', mb: 1 }}>
-                  3. Take Action
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Follow AI-powered recommendations to advance your career and achieve your goals.
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
-        </Paper>
-      </Box>
+          Start Now - It's Free
+        </Button>
+      </Paper>
     </Container>
   );
 };

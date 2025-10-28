@@ -14,6 +14,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, Form
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from fastapi_sso.sso.google import GoogleSSO
@@ -62,6 +63,15 @@ google_sso = GoogleSSO(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "http://localhost
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token", auto_error=False)
 
 app = FastAPI(title="NextStepAI API")
+
+# Enable CORS for React frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", STREAMLIT_FRONTEND_URL],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Fine-tuned Model Configuration ---
 # Prefer the user-provided model folder if present (support both underscore and hyphen variants)
@@ -857,6 +867,10 @@ def generate_layout_feedback(resume_text: str) -> str:
 
 # --- LLM Skill Extraction Function ---
 def extract_skills_with_llm(resume_text: str) -> List[str]:
+    """
+    Extract skills from resume text using LLM with fallback.
+    Falls back to regex-based extraction if LLM fails or quota exceeded.
+    """
     global llm
     if llm is None:
         print("LLM not initialized. Using fallback skill extraction...")
@@ -882,7 +896,7 @@ def extract_skills_with_llm(resume_text: str) -> List[str]:
         print("Invoking LLM for skill extraction...")
         response_model = chain.invoke({"resume_text": resume_text})
         extracted_skills = sorted(list(set([skill.lower() for skill in response_model.skills])))
-        print(f"Extracted skills: {extracted_skills}")
+        print(f"LLM extracted {len(extracted_skills)} skills")
         
         # Fallback if LLM returns empty list
         if not extracted_skills:
@@ -891,8 +905,12 @@ def extract_skills_with_llm(resume_text: str) -> List[str]:
         
         return extracted_skills
     except Exception as e:
-        print(f"Error during LLM skill extraction: {e}")
-        print("Using fallback skill extraction...")
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower() or "ResourceExhausted" in error_msg:
+            print(f"API quota exceeded. Using fallback skill extraction...")
+        else:
+            print(f"Error during LLM skill extraction: {e}")
+            print("Using fallback skill extraction...")
         return _extract_skills_fallback(resume_text)
 
 def _extract_skills_fallback(text: str) -> List[str]:
@@ -987,13 +1005,17 @@ async def analyze_resume(
         # Log but do not fail the user-facing request
         print(f"[WARN] Could not persist ResumeAnalysis: {_e}")
     
+    # Return response with frontend-compatible field names
     return {
-        "resume_skills": resume_skills,
+        "skills": resume_skills,  # Frontend expects 'skills'
+        "resume_skills": resume_skills,  # Keep for backward compatibility
         "recommended_job_title": recommended_job_title,
         "required_skills": sorted(list(required_skills_set)),
+        "skills_to_add": skills_to_add,  # Changed from missing_skills_with_links
         "missing_skills_with_links": missing_skills_with_links,
         "match_percentage": match_percentage,
-        "live_jobs": live_jobs,
+        "recommended_jobs": live_jobs,  # Frontend expects 'recommended_jobs'
+        "live_jobs": live_jobs,  # Keep for backward compatibility
         "layout_feedback": layout_feedback
     }
 
@@ -1298,12 +1320,13 @@ async def upload_rag_documents(
             raise HTTPException(status_code=400, detail=f"File {file.filename} is not a PDF")
 
         file_path = upload_dir / file.filename
-        # Save uploaded file
+        # Save uploaded file - read content first to avoid stream issues
+        content = await file.read()
         with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(content)
 
         uploaded_files.append(file.filename)
-        logging.info(f"[UPLOAD] {file.filename}")
+        logging.info(f"[UPLOAD] {file.filename} ({len(content)} bytes)")
 
     # Start background indexing so upload returns quickly
     def _background_index():
@@ -1690,9 +1713,93 @@ async def upload_rag_documents(
                 # Load uploaded documents (use existing loader to keep parsing consistent)
                 upload_dir = "./uploads"
                 pdf_paths = [os.path.join(upload_dir, f) for f in uploaded_files if f.lower().endswith('.pdf')]
-                docs = rag_coach_instance.load_pdf_documents(pdf_paths)
+                
+                # CRITICAL: Add longer wait time for file system to flush writes completely
+                import time
+                time.sleep(2)  # Increased from 0.5s to 2s for reliable file writes
+                
+                # Verify files exist and are readable
+                for pdf_path in pdf_paths:
+                    if not os.path.exists(pdf_path):
+                        raise Exception(f"File not found after upload: {pdf_path}")
+                    file_size = os.path.getsize(pdf_path)
+                    if file_size == 0:
+                        raise Exception(f"File is empty: {pdf_path}")
+                    logging.info(f"[RAG] Verified file: {pdf_path} ({file_size} bytes)")
+                    
+                    # Test file readability
+                    try:
+                        with open(pdf_path, 'rb') as test_file:
+                            test_file.read(100)  # Read first 100 bytes to verify
+                    except Exception as e:
+                        raise Exception(f"File not readable: {pdf_path} - {e}")
+                
+                # Try to load documents with better error handling
+                try:
+                    docs = rag_coach_instance.load_pdf_documents(pdf_paths)
+                except Exception as pdf_error:
+                    logging.error(f"[RAG] PDF loading failed: {pdf_error}")
+                    # Create error result
+                    error_result = {
+                        "formatted": f"""## ⚠️ PDF Processing Error
 
-                # Aggregate texts per source
+Failed to read PDF files: {str(pdf_error)}
+
+**Common causes:**
+1. PDF files are corrupted or incomplete
+2. PDF files are password-protected
+3. PDF files contain only scanned images (no text layer)
+4. File upload was interrupted
+
+**Solution:**
+- Try re-uploading the files
+- Ensure PDFs are not password-protected
+- If PDFs are scanned images, use OCR software first
+- Try converting to a standard PDF format""",
+                        "similarity_metrics": {
+                            "match_percentage": 0,
+                            "total_jd_skills": 0,
+                            "matched_skills_count": 0,
+                            "missing_skills_count": 0,
+                            "matched_skills": [],
+                            "missing_skills": []
+                        },
+                        "error": str(pdf_error)
+                    }
+                    rag_processing_state.update({"processing": False, "ready": True, "result": error_result})
+                    return
+                
+                if not docs:
+                    error_msg = "No text content could be extracted from PDF files"
+                    logging.error(f"[RAG] {error_msg}")
+                    error_result = {
+                        "formatted": f"""## ⚠️ No Text Extracted
+
+{error_msg}
+
+**This usually means:**
+1. PDFs contain only scanned images without OCR
+2. PDFs are empty or corrupted
+3. PDF format is not standard
+
+**Solution:**
+- Open the PDF in Adobe Reader to verify it contains selectable text
+- If it's a scanned PDF, use OCR software to add a text layer
+- Re-export the PDF from the source application""",
+                        "similarity_metrics": {
+                            "match_percentage": 0,
+                            "total_jd_skills": 0,
+                            "matched_skills_count": 0,
+                            "missing_skills_count": 0,
+                            "matched_skills": [],
+                            "missing_skills": []
+                        },
+                        "error": error_msg
+                    }
+                    rag_processing_state.update({"processing": False, "ready": True, "result": error_result})
+                    return
+
+                # Aggregate texts per source (use full path for matching)
                 sources_text = {}
                 for d in docs:
                     src = d.metadata.get('source', 'uploaded')
@@ -1740,30 +1847,71 @@ async def upload_rag_documents(
                 resume_file = None
                 job_file = None
                 
+                # Match using full paths since that's what's in sources_text
                 for fname in uploaded_files:
-                    full_text = "\n".join(sources_text.get(fname, []))
+                    full_path = os.path.join(upload_dir, fname)
+                    full_text = "\n".join(sources_text.get(full_path, []))
+                    
+                    if not full_text:
+                        logging.warning(f"[RAG] No text extracted from {fname}")
+                        continue
+                    
                     doc_type = _detect_document_type(full_text, fname)
                     
                     if doc_type == 'resume':
                         resume_text = full_text
                         resume_file = fname
-                        logging.info(f"[RAG] Detected RESUME: {fname}")
+                        logging.info(f"[RAG] Detected RESUME: {fname} ({len(full_text)} chars)")
                     elif doc_type == 'job':
                         job_text = full_text
                         job_file = fname
-                        logging.info(f"[RAG] Detected JOB DESCRIPTION: {fname}")
+                        logging.info(f"[RAG] Detected JOB DESCRIPTION: {fname} ({len(full_text)} chars)")
                 
                 # Fallback: if detection failed and we have exactly 2 files
                 if not resume_text and not job_text and len(uploaded_files) >= 2:
                     # Assume first file is resume, second is job (common upload pattern)
                     resume_file, job_file = uploaded_files[0], uploaded_files[1]
-                    resume_text = "\n".join(sources_text.get(resume_file, []))
-                    job_text = "\n".join(sources_text.get(job_file, []))
+                    resume_text = "\n".join(sources_text.get(os.path.join(upload_dir, resume_file), []))
+                    job_text = "\n".join(sources_text.get(os.path.join(upload_dir, job_file), []))
                     logging.info(f"[RAG] Fallback: {resume_file} → RESUME, {job_file} → JOB")
                 
-                # If still empty, log error
+                # If still empty, log error and create a helpful fallback response
                 if not resume_text or not job_text:
-                    logging.warning(f"[RAG] Could not identify both resume and JD. Resume: {len(resume_text)} chars, Job: {len(job_text)} chars")
+                    error_msg = f"Could not identify both resume and JD. Resume: {len(resume_text)} chars, Job: {len(job_text)} chars"
+                    logging.error(f"[RAG] {error_msg}")
+                    
+                    # Create a fallback result with helpful message
+                    result = {
+                        "formatted": f"""## ⚠️ Processing Error
+
+{error_msg}
+
+**Please ensure:**
+1. You uploaded TWO PDF files (one resume, one job description)
+2. The files are not corrupted or password-protected
+3. The files contain readable text (not just images)
+
+**File names detected:**
+{chr(10).join(f'- {f}' for f in uploaded_files)}
+
+**Tip:** Name your files clearly (e.g., "my_resume.pdf" and "job_description.pdf") to help automatic detection.""",
+                        "summary": None,
+                        "skills": [],
+                        "resume_bullets": None,
+                        "keywords": "",
+                        "generated_at": datetime.datetime.utcnow().isoformat() + 'Z',
+                        "similarity_metrics": {
+                            "match_percentage": 0,
+                            "total_jd_skills": 0,
+                            "matched_skills_count": 0,
+                            "missing_skills_count": 0,
+                            "matched_skills": [],
+                            "missing_skills": []
+                        },
+                        "error": error_msg
+                    }
+                    rag_processing_state.update({"processing": False, "ready": True, "result": result})
+                    return
 
                 # ULTRA-SHORT text to prevent crashes (300 chars = ~75 tokens)
                 resume_short = resume_text[:300] if resume_text else ""

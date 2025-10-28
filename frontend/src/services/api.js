@@ -23,7 +23,7 @@ api.interceptors.request.use(
   }
 );
 
-// Handle 401 responses
+// Handle responses and errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -56,10 +56,14 @@ export const cvAPI = {
 
 export const careerAPI = {
   queryCareerPath: (question) => 
-    api.post('/query-career-path/', { question }),
+    api.post('/query-career-path/', { text: question }),
   
-  getCareerAdvice: (question) => 
-    api.post('/career-advice-ai', { question }),
+  getCareerAdvice: (question, maxLength = 200, temperature = 0.7) => 
+    api.post('/career-advice-ai', { 
+      text: question,
+      max_length: maxLength,
+      temperature: temperature
+    }),
   
   getModelStatus: () => 
     api.get('/model-status'),
@@ -71,8 +75,16 @@ export const ragAPI = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   
-  query: (question, sessionId) => 
-    api.post('/rag-coach/query', { question, session_id: sessionId }),
+  uploadDocuments: (formData) => 
+    api.post('/rag-coach/upload?process_resume_job=true', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  
+  getProcessedResult: () => 
+    api.get('/rag-coach/processed-result'),
+  
+  query: (question) => 
+    api.post('/rag-coach/query', { question }),
   
   getStatus: () => 
     api.get('/rag-coach/status'),

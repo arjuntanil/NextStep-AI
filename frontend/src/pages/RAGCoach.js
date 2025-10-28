@@ -15,20 +15,32 @@ import {
   Stepper,
   Step,
   StepLabel,
+  Grid,
+  LinearProgress,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
 } from '@mui/material';
 import {
   CloudUpload as UploadIcon,
   Send as SendIcon,
   Description as FileIcon,
   Chat as ChatIcon,
+  CheckCircle as CheckIcon,
+  TrendingUp as TrendingIcon,
 } from '@mui/icons-material';
 
 const RAGCoach = () => {
   const [step, setStep] = useState(0);
-  const [file, setFile] = useState(null);
-  const [fileName, setFileName] = useState('');
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeFileName, setResumeFileName] = useState('');
+  const [jobDescFile, setJobDescFile] = useState(null);
+  const [jobDescFileName, setJobDescFileName] = useState('');
   const [uploading, setUploading] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
+  const [processing, setProcessing] = useState(false);
+  const [processedResult, setProcessedResult] = useState(null);
   const [question, setQuestion] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,34 +55,69 @@ const RAGCoach = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleFileChange = (event) => {
+  const handleResumeChange = (event) => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
-      setFile(selectedFile);
-      setFileName(selectedFile.name);
+      setResumeFile(selectedFile);
+      setResumeFileName(selectedFile.name);
+      setError('');
+    }
+  };
+
+  const handleJobDescChange = (event) => {
+    const selectedFile = event.target.files[0];
+    if (selectedFile) {
+      setJobDescFile(selectedFile);
+      setJobDescFileName(selectedFile.name);
       setError('');
     }
   };
 
   const handleUpload = async () => {
-    if (!file) {
-      setError('Please select a file');
+    if (!resumeFile || !jobDescFile) {
+      setError('Please upload both resume and job description');
       return;
     }
 
     setUploading(true);
+    setProcessing(true);
     setError('');
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('files', resumeFile);
+      formData.append('files', jobDescFile);
+      formData.append('process_resume_job', 'true');
 
-      const response = await ragAPI.uploadDocument(formData);
-      setSessionId(response.data.session_id);
-      setStep(1);
+      const response = await ragAPI.uploadDocuments(formData);
+      console.log('Upload response:', response.data);
+      
+      // Poll for processed results
+      let attempts = 0;
+      const maxAttempts = 30; // 30 seconds max wait
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const resultResponse = await ragAPI.getProcessedResult();
+          if (resultResponse.data && resultResponse.data.result) {
+            clearInterval(pollInterval);
+            setProcessedResult(resultResponse.data.result);
+            setProcessing(false);
+            setStep(1);
+          }
+        } catch (pollErr) {
+          if (attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            setProcessing(false);
+            setError('Processing timeout. Please try again.');
+          }
+        }
+      }, 1000);
+
     } catch (err) {
-      console.error('Error uploading file:', err);
-      setError(err.response?.data?.detail || 'Failed to upload file. Please try again.');
+      console.error('Error uploading files:', err);
+      setError(err.response?.data?.detail || 'Failed to upload files. Please try again.');
+      setProcessing(false);
     } finally {
       setUploading(false);
     }
@@ -91,7 +138,7 @@ const RAGCoach = () => {
     setError('');
 
     try {
-      const response = await ragAPI.query(question, sessionId);
+      const response = await ragAPI.query(question);
       const aiMessage = {
         type: 'ai',
         text: response.data.answer || response.data.response,
@@ -113,30 +160,64 @@ const RAGCoach = () => {
 
   const handleReset = () => {
     setStep(0);
-    setFile(null);
-    setFileName('');
-    setSessionId(null);
+    setResumeFile(null);
+    setResumeFileName('');
+    setJobDescFile(null);
+    setJobDescFileName('');
+    setProcessedResult(null);
     setConversation([]);
     setQuestion('');
     setError('');
   };
 
-  const steps = ['Upload Document', 'Ask Questions'];
+  const steps = ['Upload Documents', 'View Analysis & Ask Questions'];
 
   return (
     <Container maxWidth="lg">
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h3" gutterBottom sx={{ fontWeight: 'bold', color: 'primary.main' }}>
-          🤖 RAG Coach
+      <Box sx={{ mb: 5 }}>
+        <Typography 
+          variant="h2" 
+          gutterBottom 
+          sx={{ 
+            fontWeight: 700, 
+            background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            mb: 2,
+            fontFamily: 'Space Grotesk',
+          }}
+        >
+          RAG Coach
         </Typography>
-        <Typography variant="h6" color="text.secondary">
+        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
           Upload documents and get contextual answers using Retrieval-Augmented Generation
         </Typography>
       </Box>
 
       {/* Stepper */}
-      <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
-        <Stepper activeStep={step}>
+      <Paper 
+        elevation={0} 
+        className="glass-card"
+        sx={{ 
+          p: 4, 
+          mb: 4,
+          borderRadius: 4,
+          border: '1px solid rgba(16, 185, 129, 0.2)',
+          background: 'rgba(255, 255, 255, 0.8)',
+          backdropFilter: 'blur(20px)',
+        }}
+      >
+        <Stepper 
+          activeStep={step}
+          sx={{
+            '& .MuiStepLabel-root .Mui-completed': {
+              color: 'success.main',
+            },
+            '& .MuiStepLabel-root .Mui-active': {
+              color: 'success.main',
+            },
+          }}
+        >
           {steps.map((label) => (
             <Step key={label}>
               <StepLabel>{label}</StepLabel>
@@ -145,74 +226,233 @@ const RAGCoach = () => {
         </Stepper>
       </Paper>
 
-      {/* Step 0: Upload Document */}
+      {/* Step 0: Upload Documents */}
       {step === 0 && (
-        <Paper elevation={3} sx={{ p: 4 }}>
-          <Box sx={{ textAlign: 'center', mb: 3 }}>
-            <FileIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-              Upload Your Document
+        <Paper 
+          elevation={0} 
+          className="glass-card"
+          sx={{ 
+            p: 6,
+            borderRadius: 4,
+            border: '1px solid rgba(16, 185, 129, 0.2)',
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(20px)',
+          }}
+        >
+          <Box sx={{ textAlign: 'center', mb: 5 }}>
+            <Box sx={{
+              display: 'inline-flex',
+              p: 3,
+              borderRadius: 4,
+              background: 'linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(59,130,246,0.1) 100%)',
+              mb: 3,
+              animation: 'float 3s ease-in-out infinite',
+            }}>
+              <FileIcon sx={{ fontSize: 100, color: 'success.main' }} />
+            </Box>
+            <Typography variant="h4" gutterBottom sx={{ fontWeight: 800, mb: 2 }}>
+              Upload Resume & Job Description
             </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Supported formats: PDF, DOCX, TXT
+            <Typography variant="body1" color="text.secondary" sx={{ fontSize: '1.1rem' }}>
+              Upload both files to get AI-powered analysis and skill gap insights
             </Typography>
           </Box>
 
-          <Box>
-            <input
-              accept=".pdf,.doc,.docx,.txt"
-              style={{ display: 'none' }}
-              id="rag-file"
-              type="file"
-              onChange={handleFileChange}
-            />
-            <label htmlFor="rag-file">
-              <Button
-                variant="outlined"
-                component="span"
-                startIcon={<UploadIcon />}
-                fullWidth
-                sx={{ py: 2, mb: 2 }}
+          <Grid container spacing={3}>
+            {/* Resume Upload */}
+            <Grid item xs={12} md={6}>
+              <Paper 
+                variant="outlined" 
+                className="glass-card"
+                sx={{ 
+                  p: 4, 
+                  textAlign: 'center',
+                  borderRadius: 3,
+                  border: '2px dashed',
+                  borderColor: resumeFileName ? 'success.main' : 'rgba(16, 185, 129, 0.3)',
+                  background: resumeFileName ? 'rgba(16, 185, 129, 0.05)' : 'rgba(16, 185, 129, 0.02)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    borderColor: 'success.main',
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    transform: 'translateY(-4px)',
+                  },
+                }}
               >
-                {fileName || 'Choose Document'}
-              </Button>
-            </label>
-            {fileName && (
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
-                <FileIcon sx={{ mr: 1, color: 'primary.main' }} />
-                <Typography variant="body2">{fileName}</Typography>
-              </Box>
-            )}
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 800 }}>
+                  📄 Your Resume
+                </Typography>
+                <input
+                  accept=".pdf"
+                  style={{ display: 'none' }}
+                  id="resume-file"
+                  type="file"
+                  onChange={handleResumeChange}
+                />
+                <label htmlFor="resume-file">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<UploadIcon />}
+                    fullWidth
+                    sx={{ 
+                      py: 2.5, 
+                      mb: 2,
+                      borderRadius: 2,
+                      borderWidth: 2,
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderWidth: 2,
+                      },
+                    }}
+                  >
+                    {resumeFileName || 'Choose Resume (PDF)'}
+                  </Button>
+                </label>
+                {resumeFileName && (
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      animation: 'scaleIn 0.3s ease-out',
+                    }}
+                  >
+                    <CheckIcon sx={{ mr: 1, color: 'success.main' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{resumeFileName}</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
 
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+            {/* Job Description Upload */}
+            <Grid item xs={12} md={6}>
+              <Paper 
+                variant="outlined" 
+                className="glass-card"
+                sx={{ 
+                  p: 4, 
+                  textAlign: 'center',
+                  borderRadius: 3,
+                  border: '2px dashed',
+                  borderColor: jobDescFileName ? 'success.main' : 'rgba(16, 185, 129, 0.3)',
+                  background: jobDescFileName ? 'rgba(16, 185, 129, 0.05)' : 'rgba(16, 185, 129, 0.02)',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    borderColor: 'success.main',
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    transform: 'translateY(-4px)',
+                  },
+                }}
+              >
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: 800 }}>
+                  📋 Job Description
+                </Typography>
+                <input
+                  accept=".pdf"
+                  style={{ display: 'none' }}
+                  id="job-desc-file"
+                  type="file"
+                  onChange={handleJobDescChange}
+                />
+                <label htmlFor="job-desc-file">
+                  <Button
+                    variant="outlined"
+                    component="span"
+                    startIcon={<UploadIcon />}
+                    fullWidth
+                    sx={{ 
+                      py: 2.5, 
+                      mb: 2,
+                      borderRadius: 2,
+                      borderWidth: 2,
+                      fontWeight: 600,
+                      '&:hover': {
+                        borderWidth: 2,
+                      },
+                    }}
+                  >
+                    {jobDescFileName || 'Choose Job Description (PDF)'}
+                  </Button>
+                </label>
+                {jobDescFileName && (
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      animation: 'scaleIn 0.3s ease-out',
+                    }}
+                  >
+                    <CheckIcon sx={{ mr: 1, color: 'success.main' }} />
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>{jobDescFileName}</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
 
-            <Button
-              variant="contained"
-              size="large"
-              fullWidth
-              onClick={handleUpload}
-              disabled={!file || uploading}
-              sx={{ py: 1.5 }}
-            >
-              {uploading ? <CircularProgress size={24} /> : 'Upload & Process'}
-            </Button>
-          </Box>
+          {error && (
+            <Alert severity="error" sx={{ mt: 3 }}>
+              {error}
+            </Alert>
+          )}
+
+          {processing && (
+            <Box sx={{ mt: 4 }}>
+              <LinearProgress 
+                sx={{
+                  height: 8,
+                  borderRadius: 4,
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  '& .MuiLinearProgress-bar': {
+                    background: 'linear-gradient(90deg, #10b981 0%, #3b82f6 100%)',
+                  },
+                }} 
+              />
+              <Typography variant="body1" color="text.secondary" sx={{ mt: 2, textAlign: 'center', fontWeight: 600 }}>
+                Processing your documents... This may take up to 30 seconds
+              </Typography>
+            </Box>
+          )}
+
+          <Button
+            variant="contained"
+            size="large"
+            fullWidth
+            onClick={handleUpload}
+            disabled={!resumeFile || !jobDescFile || uploading || processing}
+            sx={{ 
+              py: 2, 
+              mt: 4,
+              borderRadius: 3,
+              fontSize: '1.1rem',
+              fontWeight: 700,
+              textTransform: 'none',
+              background: 'linear-gradient(135deg, #10b981 0%, #3b82f6 100%)',
+              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #059669 0%, #2563eb 100%)',
+                boxShadow: '0 6px 20px rgba(16, 185, 129, 0.5)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            {uploading ? <CircularProgress size={24} sx={{ color: 'white' }} /> : '✨ Analyze Documents'}
+          </Button>
         </Paper>
       )}
 
-      {/* Step 1: Ask Questions */}
+      {/* Step 1: Analysis Results & Ask Questions */}
       {step === 1 && (
         <>
+          {/* Uploaded Files Info */}
           <Paper elevation={3} sx={{ p: 2, mb: 3, background: '#f5f5f5' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <FileIcon color="primary" />
                 <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                  Document: {fileName}
+                  {resumeFileName} & {jobDescFileName}
                 </Typography>
               </Box>
               <Button size="small" onClick={handleReset}>
@@ -220,6 +460,120 @@ const RAGCoach = () => {
               </Button>
             </Box>
           </Paper>
+
+          {/* Analysis Results */}
+          {processedResult && processedResult.similarity_metrics && (
+            <Box sx={{ mb: 3 }}>
+              {/* Match Percentage */}
+              <Paper elevation={3} sx={{ p: 4, mb: 3 }}>
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
+                  📊 Skill Match Analysis
+                </Typography>
+                <Box sx={{ mb: 3 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={processedResult.similarity_metrics.match_percentage}
+                    sx={{ height: 12, borderRadius: 6, mb: 1 }}
+                  />
+                  <Typography variant="h6" color="text.primary">
+                    {processedResult.similarity_metrics.match_percentage.toFixed(1)}% Match
+                  </Typography>
+                </Box>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <Card variant="outlined">
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">
+                          Job Skills Required
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
+                          {processedResult.similarity_metrics.total_jd_skills}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Card variant="outlined" sx={{ background: '#e8f5e9' }}>
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">
+                          Skills Matched
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'success.main' }}>
+                          {processedResult.similarity_metrics.matched_skills_count}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Card variant="outlined" sx={{ background: '#fff3e0' }}>
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">
+                          Skills to Add
+                        </Typography>
+                        <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'warning.main' }}>
+                          {processedResult.similarity_metrics.missing_skills_count}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {/* Matched Skills */}
+              {processedResult.similarity_metrics.matched_skills && processedResult.similarity_metrics.matched_skills.length > 0 && (
+                <Paper elevation={3} sx={{ p: 4, mb: 3 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    ✅ Matched Skills
+                  </Typography>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    {processedResult.similarity_metrics.matched_skills.map((skill, index) => (
+                      <Chip
+                        key={index}
+                        label={skill}
+                        color="success"
+                        icon={<CheckIcon />}
+                      />
+                    ))}
+                  </Box>
+                </Paper>
+              )}
+
+              {/* Missing Skills */}
+              {processedResult.similarity_metrics.missing_skills && processedResult.similarity_metrics.missing_skills.length > 0 && (
+                <Paper elevation={3} sx={{ p: 4, mb: 3 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    💡 Skills to Develop
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    These skills from the job description are missing from your resume
+                  </Typography>
+                  <List>
+                    {processedResult.similarity_metrics.missing_skills.map((skill, index) => (
+                      <ListItem key={index}>
+                        <ListItemIcon>
+                          <TrendingIcon color="warning" />
+                        </ListItemIcon>
+                        <ListItemText primary={skill} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Paper>
+              )}
+
+              {/* Formatted Output */}
+              {processedResult.formatted && (
+                <Paper elevation={3} sx={{ p: 4, mb: 3 }}>
+                  <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
+                    📝 Detailed Analysis
+                  </Typography>
+                  <Divider sx={{ mb: 2 }} />
+                  <Box sx={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '0.9rem' }}>
+                    {processedResult.formatted}
+                  </Box>
+                </Paper>
+              )}
+            </Box>
+          )}
 
           <Paper
             elevation={3}
