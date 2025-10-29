@@ -1,299 +1,409 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Aurora from '../components/Aurora';
 import {
   Container,
-  Grid,
-  Card,
-  CardContent,
   Typography,
   Button,
   Box,
+  Modal,
+  Grid,
   Paper,
+  Card,
+  CardContent,
 } from '@mui/material';
 import {
-  Description as CVIcon,
-  Psychology as AdvisorIcon,
-  Chat as CoachIcon,
-  TrendingUp as GrowthIcon,
-  Work as JobIcon,
-  School as SkillIcon,
-  ArrowForward as ArrowIcon,
+  TrendingUp,
+  Work,
+  School,
+  Speed,
+  BarChart,
+  VerifiedUser,
+  Star,
 } from '@mui/icons-material';
 
 const Dashboard = () => {
+  const [openModal, setOpenModal] = useState(null);
   const navigate = useNavigate();
 
-  const mainFeatures = [
+  const handleOpen = (modal) => setOpenModal(modal);
+  const handleClose = () => setOpenModal(null);
+
+  const features = [
     {
       title: 'CV Analyzer',
-      description: 'Upload your resume and get AI-powered analysis with personalized job recommendations and skill insights.',
-      icon: <CVIcon sx={{ fontSize: 50 }} />,
+      desc: 'Upload your CV to receive detailed analysis and improvement suggestions.',
+      color: '#8b5cf6',
       path: '/cv-analyzer',
-      color: '#1e3a8a',
     },
     {
-      title: 'Career Advisor',
-      description: 'Get expert career guidance from our fine-tuned AI model. Ask anything about your career path.',
-      icon: <AdvisorIcon sx={{ fontSize: 50 }} />,
+      title: 'AI Career Advisor',
+      desc: 'Answer a few questions and receive personalized career insights powered by AI.',
+      color: '#10b981',
       path: '/career-advisor',
-      color: '#3b82f6',
     },
     {
-      title: 'RAG Coach',
-      description: 'Upload documents and get contextual answers using advanced Retrieval-Augmented Generation technology.',
-      icon: <CoachIcon sx={{ fontSize: 50 }} />,
-      path: '/rag-coach',
-      color: '#0ea5e9',
+      title: 'Resume Analyzer with JD',
+      desc: 'Compare your resume with a job description and identify matching strengths.',
+      color: '#3b82f6',
+      path: '/cv-analyzer',
     },
   ];
 
-  const benefits = [
-    {
-      icon: <GrowthIcon sx={{ fontSize: 40, color: '#1e3a8a' }} />,
-      title: 'Accelerate Growth',
-      description: 'Fast-track your career with data-driven insights',
-    },
-    {
-      icon: <JobIcon sx={{ fontSize: 40, color: '#3b82f6' }} />,
-      title: 'Find Perfect Jobs',
-      description: 'AI-matched opportunities tailored to your skills',
-    },
-    {
-      icon: <SkillIcon sx={{ fontSize: 40, color: '#0ea5e9' }} />,
-      title: 'Skill Development',
-      description: 'Identify and bridge skill gaps effectively',
-    },
-  ];
+  const handleGetStarted = (path) => {
+    handleClose();
+    navigate(path);
+  };
 
   return (
-    <Container maxWidth="xl">
-      {/* Hero Section */}
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
-          borderRadius: 3,
-          p: { xs: 4, md: 8 },
-          mb: 6,
-          color: 'white',
-          position: 'relative',
-          overflow: 'hidden',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.3), transparent 50%), radial-gradient(circle at 70% 50%, rgba(14, 165, 233, 0.3), transparent 50%)',
-            animation: 'floatUpDown 10s ease-in-out infinite',
-          },
-        }}
-      >
-        <Grid container spacing={4} alignItems="center">
-          <Grid item xs={12} md={7}>
-            <Typography variant="h2" sx={{ fontWeight: 700, mb: 2 }}>
-              Navigate Your Career with AI
-            </Typography>
-            <Typography variant="h6" sx={{ mb: 4, opacity: 0.95, lineHeight: 1.7 }}>
-              Unlock your professional potential with intelligent career guidance, resume analysis, and personalized job recommendations powered by advanced AI.
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-              <Button
-                variant="contained"
-                size="large"
-                onClick={() => navigate('/cv-analyzer')}
-                sx={{
-                  bgcolor: 'white',
-                  color: '#ff6b35',
-                  fontWeight: 700,
-                  px: 4,
-                  py: 1.5,
-                  '&:hover': {
-                    bgcolor: '#f9fafb',
-                  },
-                }}
-              >
-                Analyze Your CV
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                onClick={() => navigate('/career-advisor')}
-                sx={{
-                  borderColor: 'white',
-                  color: 'white',
-                  fontWeight: 700,
-                  px: 4,
-                  py: 1.5,
-                  borderWidth: 2,
-                  '&:hover': {
-                    borderColor: 'white',
-                    bgcolor: 'rgba(255,255,255,0.1)',
-                    borderWidth: 2,
-                  },
-                }}
-              >
-                Get Career Advice
-              </Button>
-            </Box>
-          </Grid>
-          <Grid item xs={12} md={5} sx={{ display: { xs: 'none', md: 'block' } }}>
-            <Box
-              sx={{
-                fontSize: '200px',
-                textAlign: 'center',
-                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.2))',
-                animation: 'floatUpDown 6s ease-in-out infinite',
-              }}
-            >
-              <svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="100" cy="100" r="80" fill="white" opacity="0.2"/>
-                <path d="M100 40 L120 80 L160 90 L130 120 L140 160 L100 140 L60 160 L70 120 L40 90 L80 80 Z" fill="white"/>
-              </svg>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
+    <>
+      {/* Aurora Animated Background */}
+      <Aurora
+        colorStops={['#dc2626', '#f59e0b', '#000000']}
+        blend={0.8}
+        amplitude={1.5}
+        speed={0.4}
+      />
+    
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        textAlign: 'center',
+        px: 3,
+        position: 'relative',
+        zIndex: 1,
+      }}
+    >
+      {/* Main Hero Section */}
+      <Container maxWidth="md">
+        <Typography
+          variant="h2"
+          sx={{
+            fontWeight: 800,
+            mb: 3,
+            color: 'white',
+            fontFamily: 'Space Grotesk, sans-serif',
+            fontSize: { xs: '2.5rem', md: '3.5rem' },
+          }}
+        >
+          NextStep AI
+        </Typography>
+        <Typography
+          variant="h6"
+          sx={{
+            mb: 6,
+            color: 'white',
+            opacity: 0.9,
+            lineHeight: 1.6,
+            maxWidth: 800,
+            mx: 'auto',
+            fontSize: { xs: '1rem', md: '1.25rem' },
+          }}
+        >
+          Unlock your professional potential with intelligent career guidance, resume analysis, and personalized job recommendations powered by advanced AI.
+        </Typography>
 
-      {/* Benefits Section */}
-      <Box sx={{ mb: 8 }}>
-        <Grid container spacing={3}>
-          {benefits.map((benefit, index) => (
-            <Grid item xs={12} md={4} key={index}>
-              <Paper
+        {/* Buttons Section */}
+        <Grid container spacing={3} justifyContent="center" sx={{ mb: 4 }}>
+          {features.map((feature, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <Button
+                onClick={() => handleOpen(feature.title)}
                 sx={{
-                  p: 3,
-                  textAlign: 'center',
-                  height: '100%',
-                  transition: 'transform 0.3s',
+                  width: '100%',
+                  py: 2,
+                  fontWeight: 700,
+                  color: 'white',
+                  borderRadius: '2rem',
+                  border: `2px solid ${feature.color}`,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  backdropFilter: 'blur(10px)',
+                  transition: 'all 0.3s',
+                  fontSize: { xs: '0.9rem', md: '1rem' },
+                  boxShadow: `0 0 20px ${feature.color}30`,
                   '&:hover': {
-                    transform: 'translateY(-8px)',
+                    background: `${feature.color}20`,
+                    borderColor: feature.color,
+                    transform: 'translateY(-4px)',
+                    boxShadow: `0 8px 25px ${feature.color}80`,
                   },
                 }}
               >
-                <Box sx={{ mb: 2 }}>{benefit.icon}</Box>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                  {benefit.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {benefit.description}
-                </Typography>
-              </Paper>
+                {feature.title}
+              </Button>
             </Grid>
           ))}
         </Grid>
-      </Box>
+      </Container>
 
-      {/* Our Core AI Features - Moved after Hero */}
-      <Box sx={{ mb: 8 }}>
-        <Typography variant="h3" sx={{ fontWeight: 700, mb: 1, textAlign: 'center', fontFamily: 'Space Grotesk' }}>
-          Our Core AI Features
+      {/* Benefits Section */}
+      <Container maxWidth="lg" sx={{ mt: 8, mb: 8 }}>
+        <Typography
+          variant="h3"
+          sx={{
+            fontWeight: 800,
+            textAlign: 'center',
+            mb: 2,
+            color: 'white',
+            fontFamily: 'Space Grotesk, sans-serif',
+          }}
+        >
+          Why Choose NextStep AI?
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ mb: 6, textAlign: 'center' }}>
-          Everything you need to supercharge your career journey
+        <Typography
+          variant="body1"
+          sx={{
+            textAlign: 'center',
+            mb: 6,
+            color: 'rgba(255, 255, 255, 0.7)',
+            maxWidth: 600,
+            mx: 'auto',
+          }}
+        >
+          Powered by cutting-edge AI to transform your career journey
         </Typography>
         <Grid container spacing={4}>
-          {mainFeatures.map((feature, index) => (
-            <Grid item xs={12} md={4} key={index}>
+          {[
+            {
+              icon: <Work />,
+              title: 'Smart Job Matching',
+              desc: 'AI algorithms match you with the perfect opportunities',
+              color: '#3b82f6',
+            },
+            {
+              icon: <School />,
+              title: 'Skill Development',
+              desc: 'Identify gaps and get personalized learning paths',
+              color: '#10b981',
+            },
+            {
+              icon: <BarChart />,
+              title: 'Data-Driven Insights',
+              desc: 'Make informed career decisions with real-time analytics',
+              color: '#6366f1',
+            },
+            {
+              icon: <VerifiedUser />,
+              title: 'Privacy First',
+              desc: 'Your data is encrypted and secure at all times',
+              color: '#8b5cf6',
+            },
+            {
+              icon: <TrendingUp />,
+              title: 'Career Growth',
+              desc: 'Track your progress and accelerate your journey',
+              color: '#10b981',
+            },
+          ].map((benefit, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
               <Card
                 sx={{
                   height: '100%',
-                  display: 'flex',
-                  flexDirection: 'column',
+                  background: `linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)`,
+                  backdropFilter: 'blur(20px)',
+                  border: `1px solid rgba(255, 255, 255, 0.2)`,
+                  borderRadius: 3,
                   transition: 'all 0.3s',
-                  border: `2px solid ${feature.color}20`,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: `linear-gradient(135deg, ${benefit.color}20 0%, transparent 100%)`,
+                    opacity: 0,
+                    transition: 'opacity 0.3s',
+                  },
                   '&:hover': {
-                    transform: 'translateY(-12px)',
-                    boxShadow: `0 12px 24px ${feature.color}30`,
-                    borderColor: feature.color,
+                    transform: 'translateY(-8px) scale(1.02)',
+                    boxShadow: `0 12px 40px ${benefit.color}50`,
+                    borderColor: benefit.color,
+                    '&::before': {
+                      opacity: 1,
+                    },
                   },
                 }}
               >
-                <CardContent sx={{ flexGrow: 1, p: 4 }}>
+                <CardContent sx={{ p: 3, position: 'relative', zIndex: 1 }}>
                   <Box
                     sx={{
-                      width: 100,
-                      height: 100,
-                      mb: 3,
-                      mx: 'auto',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      borderRadius: '50%',
-                      background: `${feature.color}15`,
-                      animation: 'morphShape 8s ease-in-out infinite, floatUpDown 6s ease-in-out infinite',
+                      color: benefit.color,
+                      mb: 2,
+                      fontSize: '2.5rem',
+                      filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))',
                     }}
                   >
-                    <Box sx={{ color: feature.color }}>
-                      {feature.icon}
-                    </Box>
+                    {benefit.icon}
                   </Box>
-                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 2, textAlign: 'center', fontFamily: 'Space Grotesk' }}>
-                    {feature.title}
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" sx={{ mb: 3, textAlign: 'center', lineHeight: 1.7 }}>
-                    {feature.description}
-                  </Typography>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => navigate(feature.path)}
-                    endIcon={<ArrowIcon />}
+                  <Typography
+                    variant="h6"
                     sx={{
-                      bgcolor: feature.color,
-                      fontWeight: 600,
-                      py: 1.5,
+                      fontWeight: 700,
+                      mb: 1.5,
+                      color: 'white',
                       fontFamily: 'Space Grotesk',
-                      '&:hover': {
-                        bgcolor: feature.color,
-                        opacity: 0.9,
-                      },
+                      textShadow: '0 2px 8px rgba(0,0,0,0.8)',
                     }}
                   >
-                    Get Started
-                  </Button>
+                    {benefit.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.9)',
+                      lineHeight: 1.6,
+                      fontWeight: 500,
+                      textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+                    }}
+                  >
+                    {benefit.desc}
+                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
           ))}
         </Grid>
-      </Box>
+      </Container>
 
       {/* CTA Section */}
-      <Paper
-        sx={{
-          p: 6,
-          textAlign: 'center',
-          bgcolor: '#eff6ff',
-          border: '2px dashed #1e3a8a',
-        }}
-      >
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
-          Ready to Transform Your Career?
-        </Typography>
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}>
-          Join thousands of professionals who are already using NextStepAI to accelerate their career growth and land their dream jobs.
-        </Typography>
-        <Button
-          variant="contained"
-          size="large"
-          onClick={() => navigate('/cv-analyzer')}
+      <Container maxWidth="md" sx={{ mt: 8, mb: 8 }}>
+        <Paper
           sx={{
-            bgcolor: '#1e3a8a',
-            fontWeight: 700,
-            px: 6,
-            py: 2,
-            fontSize: '1.1rem',
-            fontFamily: 'Space Grotesk',
-            '&:hover': {
-              bgcolor: '#1e40af',
-            },
+            p: 6,
+            textAlign: 'center',
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(16, 185, 129, 0.15) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '2rem',
+            boxShadow: '0 8px 32px rgba(139, 92, 246, 0.2)',
           }}
         >
-          Start Now - It's Free
-        </Button>
-      </Paper>
-    </Container>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: 800,
+              mb: 2,
+              color: 'white',
+              fontFamily: 'Space Grotesk',
+              textShadow: '0 2px 8px rgba(0,0,0,0.8)',
+            }}
+          >
+            Ready to Transform Your Career?
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              mb: 4,
+              color: 'rgba(255, 255, 255, 0.9)',
+              maxWidth: 600,
+              mx: 'auto',
+              fontWeight: 500,
+              textShadow: '0 1px 4px rgba(0,0,0,0.6)',
+            }}
+          >
+            Join thousands of professionals who are already using NextStepAI to accelerate their career growth and land their dream jobs.
+          </Typography>
+          <Button
+            variant="contained"
+            size="large"
+            onClick={() => navigate('/cv-analyzer')}
+            sx={{
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
+              fontWeight: 700,
+              px: 6,
+              py: 1.5,
+              fontSize: '1.1rem',
+              borderRadius: '2rem',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #7c3aed 0%, #059669 100%)',
+                transform: 'translateY(-4px)',
+                boxShadow: '0 8px 25px rgba(139, 92, 246, 0.5)',
+              },
+            }}
+          >
+            Get Started Now
+          </Button>
+        </Paper>
+      </Container>
+
+      {/* Feature Modals */}
+      {features.map((feature, index) => (
+        <Modal
+          key={index}
+          open={openModal === feature.title}
+          onClose={handleClose}
+          aria-labelledby={`${feature.title}-modal`}
+          sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Box
+            sx={{
+              bgcolor: 'rgba(255, 255, 255, 0.95)',
+              borderRadius: 3,
+              p: 4,
+              maxWidth: 500,
+              mx: 2,
+              textAlign: 'center',
+              color: '#1e293b',
+              boxShadow: `0 8px 32px ${feature.color}40`,
+              border: `2px solid rgba(255, 255, 255, 0.5)`,
+              backdropFilter: 'blur(20px)',
+            }}
+          >
+            <Typography variant="h4" sx={{ mb: 2, fontWeight: 700, color: '#1e293b' }}>
+              {feature.title}
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 3, color: '#475569', fontWeight: 500 }}>
+              {feature.desc}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+              <Button
+                onClick={() => handleGetStarted(feature.path)}
+                variant="contained"
+                sx={{
+                  background: feature.color,
+                  fontWeight: 700,
+                  borderRadius: '1.5rem',
+                  px: 4,
+                  '&:hover': {
+                    background: feature.color,
+                    opacity: 0.9,
+                    transform: 'scale(1.05)',
+                  },
+                }}
+              >
+                Get Started
+              </Button>
+              <Button
+                onClick={handleClose}
+                variant="outlined"
+                sx={{
+                  color: '#475569',
+                  borderColor: feature.color,
+                  fontWeight: 700,
+                  borderRadius: '1.5rem',
+                  px: 4,
+                  '&:hover': {
+                    borderColor: feature.color,
+                    background: `${feature.color}20`,
+                    color: feature.color,
+                  },
+                }}
+              >
+                Close
+              </Button>
+            </Box>
+          </Box>
+        </Modal>
+      ))}
+    </Box>
+    </>
   );
 };
 

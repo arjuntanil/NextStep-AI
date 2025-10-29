@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ragAPI } from '../services/api';
+import Aurora from '../components/Aurora';
 import {
   Container,
   Box,
@@ -173,23 +174,33 @@ const RAGCoach = () => {
   const steps = ['Upload Documents', 'View Analysis & Ask Questions'];
 
   return (
-    <Container maxWidth="lg">
+    <>
+      {/* Aurora Animated Background */}
+      <Aurora
+        colorStops={['#dc2626', '#f59e0b', '#000000']}
+        blend={0.8}
+        amplitude={1.5}
+        speed={0.4}
+      />
+    
+    <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, pb: 8 }}>
       <Box sx={{ mb: 5 }}>
         <Typography 
           variant="h2" 
           gutterBottom 
           sx={{ 
             fontWeight: 700, 
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             mb: 2,
             fontFamily: 'Space Grotesk',
+            color: 'white',
           }}
         >
           RAG Coach
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+        <Typography variant="h6" sx={{ fontWeight: 500, color: 'rgba(255, 255, 255, 0.8)', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
           Upload documents and get contextual answers using Retrieval-Augmented Generation
         </Typography>
       </Box>
@@ -688,6 +699,7 @@ const RAGCoach = () => {
         </>
       )}
     </Container>
+    </>
   );
 };
 

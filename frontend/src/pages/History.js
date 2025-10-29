@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { historyAPI } from '../services/api';
+import Aurora from '../components/Aurora';
 import {
   Container,
   Box,
@@ -79,23 +80,41 @@ const History = () => {
 
   if (loading) {
     return (
-      <Container maxWidth="lg">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
-          <CircularProgress size={60} />
-        </Box>
-      </Container>
+      <>
+        <Aurora
+          colorStops={['#dc2626', '#f59e0b', '#000000']}
+          blend={0.8}
+          amplitude={1.5}
+          speed={0.4}
+        />
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+            <CircularProgress size={60} />
+          </Box>
+        </Container>
+      </>
     );
   }
 
   return (
-    <Container maxWidth="lg">
+    <>
+      {/* Aurora Animated Background */}
+      <Aurora
+        colorStops={['#dc2626', '#f59e0b', '#000000']}
+        blend={0.8}
+        amplitude={1.5}
+        speed={0.4}
+      />
+    
+    <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
       <Box sx={{ mb: 5 }}>
         <Typography 
           variant="h2" 
           gutterBottom 
           sx={{ 
             fontWeight: 700, 
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
+            color: 'white',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             mb: 2,
@@ -104,7 +123,7 @@ const History = () => {
         >
           My History
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+        <Typography variant="h6" sx={{ fontWeight: 500, color: 'rgba(255, 255, 255, 0.8)', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
           View your past CV analyses and job recommendations
         </Typography>
       </Box>
@@ -337,6 +356,7 @@ const History = () => {
         </Box>
       )}
     </Container>
+    </>
   );
 };
 

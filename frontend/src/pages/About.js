@@ -1,4 +1,5 @@
 import React from 'react';
+import Aurora from '../components/Aurora';
 import {
   Container,
   Box,
@@ -66,7 +67,16 @@ const About = () => {
   ];
 
   return (
-    <Container maxWidth="lg">
+    <>
+      {/* Aurora Animated Background */}
+      <Aurora
+        colorStops={['#dc2626', '#f59e0b', '#000000']}
+        blend={0.8}
+        amplitude={1.5}
+        speed={0.4}
+      />
+    
+    <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
       {/* Hero Section */}
       <Box sx={{ mb: 8, textAlign: 'center' }}>
         <Typography 
@@ -74,15 +84,16 @@ const About = () => {
           sx={{ 
             fontWeight: 700, 
             mb: 2,
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             fontFamily: 'Space Grotesk',
+            color: 'white',
           }}
         >
           About NextStepAI
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 800, mx: 'auto', lineHeight: 1.8 }}>
+        <Typography variant="h6" sx={{ maxWidth: 800, mx: 'auto', lineHeight: 1.8, color: 'rgba(255, 255, 255, 0.8)', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
           Your intelligent career companion powered by cutting-edge AI technology to help you navigate your professional journey
         </Typography>
       </Box>
@@ -276,6 +287,7 @@ const About = () => {
         </Typography>
       </Box>
     </Container>
+    </>
   );
 };
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Aurora from './Aurora';
 import {
   AppBar,
   Box,
@@ -75,19 +76,36 @@ const Layout = () => {
   }
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
+      {/* Aurora Background */}
+      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, bgcolor: '#000000' }}>
+        <Aurora
+          colorStops={["#8b5cf6", "#6366f1", "#3b82f6", "#10b981"]}
+          blend={0.8}
+          amplitude={1.8}
+          speed={0.5}
+        />
+      </Box>
+      
       {/* Header */}
       <AppBar 
         position="sticky" 
-        elevation={1}
+        elevation={0}
         sx={{ 
-          bgcolor: 'white', 
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+          background: 'rgba(10, 14, 39, 0.6)',
+          borderRadius: { xs: 0, md: '2rem' },
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(139, 92, 246, 0.2)',
+          boxShadow: 'none',
+          width: { xs: '100%', md: '90%' },
+          mx: 'auto',
+          mt: { xs: 0, md: 2 },
+          left: '50%',
+          transform: { xs: 'none', md: 'translateX(-50%)' },
         }}
       >
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between', px: { xs: 2, md: 4 } }}>
             {/* Logo */}
             <Box 
               onClick={() => navigate('/')}
@@ -102,9 +120,7 @@ const Layout = () => {
                 variant="h5"
                 sx={{
                   fontWeight: 800,
-                  background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  color: 'white',
                   letterSpacing: '-0.5px',
                   fontFamily: 'Space Grotesk',
                 }}
@@ -118,9 +134,10 @@ const Layout = () => {
               <Button
                 onClick={() => navigate('/')}
                 sx={{
-                  color: location.pathname === '/' ? 'primary.main' : 'text.primary',
+                  color: location.pathname === '/' ? '#10b981' : 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 600,
                   px: 2,
+                  '&:hover': { color: '#10b981' },
                 }}
               >
                 Home
@@ -128,12 +145,13 @@ const Layout = () => {
               <Button
                 onClick={handleFeaturesClick}
                 sx={{
-                  color: 'text.primary',
+                  color: 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 600,
                   px: 2,
+                  '&:hover': { color: '#3b82f6' },
                 }}
               >
-                Features
+                Services
               </Button>
               <Menu
                 anchorEl={featuresAnchor}
@@ -144,6 +162,8 @@ const Layout = () => {
                     mt: 1,
                     minWidth: 200,
                     boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    bgcolor: 'rgba(10, 14, 39, 0.95)',
+                    backdropFilter: 'blur(20px)',
                   },
                 }}
               >
@@ -155,6 +175,7 @@ const Layout = () => {
                     sx={{
                       py: 1.5,
                       fontWeight: 500,
+                      color: 'white',
                       '&.Mui-selected': {
                         bgcolor: 'primary.light',
                         color: 'white',
@@ -171,24 +192,41 @@ const Layout = () => {
               <Button
                 onClick={() => navigate('/about')}
                 sx={{
-                  color: location.pathname === '/about' ? 'primary.main' : 'text.primary',
+                  color: location.pathname === '/about' ? '#10b981' : 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 600,
                   px: 2,
+                  '&:hover': { color: '#10b981' },
                 }}
               >
                 About
               </Button>
+              <Button
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontWeight: 600,
+                  px: 2,
+                  '&:hover': { color: '#10b981' },
+                }}
+              >
+                Contact
+              </Button>
 
-              {/* User Menu */}
+              {/* User Menu - Login Button on Right */}
               <Button
                 onClick={handleUserClick}
                 startIcon={<PersonIcon />}
                 variant="outlined"
                 sx={{
-                  ml: 2,
+                  ml: 3,
                   borderWidth: 2,
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  borderRadius: '12px',
                   '&:hover': {
                     borderWidth: 2,
+                    borderColor: '#10b981',
+                    bgcolor: 'rgba(16, 185, 129, 0.1)',
+                    color: '#10b981',
                   },
                 }}
               >
@@ -206,10 +244,10 @@ const Layout = () => {
                   },
                 }}
               >
-                <MenuItem disabled sx={{ opacity: 1, fontWeight: 600 }}>
+                <MenuItem disabled sx={{ opacity: 1, fontWeight: 600, color: 'white' }}>
                   {user?.email}
                 </MenuItem>
-                <MenuItem disabled sx={{ opacity: 1 }}>
+                <MenuItem disabled sx={{ opacity: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
                   Role: {user?.role || 'user'}
                 </MenuItem>
                 <MenuItem onClick={handleLogout} sx={{ color: 'error.main', fontWeight: 600 }}>
@@ -272,7 +310,14 @@ const Layout = () => {
       </Drawer>
 
       {/* Main Content */}
-      <Box component="main" sx={{ flexGrow: 1, bgcolor: 'background.default', py: 4 }}>
+      <Box 
+        component="main" 
+        sx={{ 
+          flexGrow: 1, 
+          py: 4,
+          position: 'relative',
+        }}
+      >
         <Container maxWidth="xl">
           <Outlet />
         </Container>
@@ -285,13 +330,14 @@ const Layout = () => {
           py: 3,
           px: 2,
           mt: 'auto',
-          bgcolor: '#f9fafb',
+          bgcolor: 'rgba(10, 14, 39, 0.6)',
+          backdropFilter: 'blur(10px)',
           borderTop: '1px solid',
-          borderColor: 'divider',
+          borderColor: 'rgba(139, 92, 246, 0.2)',
         }}
       >
         <Container maxWidth="xl">
-          <Typography variant="body2" color="text.secondary" align="center">
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }} align="center">
             © {new Date().getFullYear()} NextStepAI. All rights reserved.
           </Typography>
         </Container>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import Aurora from '../components/Aurora';
 import {
   Container,
   Box,
@@ -51,7 +52,18 @@ const Register = () => {
   };
 
   return (
-    <Container component="main" maxWidth="xs">
+    <Box sx={{ position: 'relative', minHeight: '100vh' }}>
+      {/* Aurora Background */}
+      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, bgcolor: '#0a0e27' }}>
+        <Aurora
+          colorStops={['#dc2626', '#f59e0b', '#000000']}
+          blend={0.8}
+          amplitude={1.5}
+          speed={0.4}
+        />
+      </Box>
+      
+      <Container component="main" maxWidth="xs">
       <Box
         className="fade-in"
         sx={{
@@ -67,15 +79,16 @@ const Register = () => {
             p: 4, 
             width: '100%', 
             borderRadius: 3,
-            border: '1px solid #E5E7EB',
-            background: '#FFFFFF',
-            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            background: 'rgba(10, 14, 39, 0.85)',
+            backdropFilter: 'blur(20px)',
+            boxShadow: '0 4px 30px rgba(139, 92, 246, 0.3)',
           }}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <Avatar sx={{ 
               m: 1, 
-              bgcolor: 'secondary.main', 
+              bgcolor: '#10b981', 
               width: 56, 
               height: 56,
             }}>
@@ -84,12 +97,17 @@ const Register = () => {
             <Typography 
               component="h1" 
               variant="h4" 
-              className="gradient-text"
-              sx={{ mb: 1, fontWeight: 700 }}
+              sx={{ 
+                mb: 1, 
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
             >
               Join NextStepAI
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography variant="body2" sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.7)' }}>
               Start your career journey today
             </Typography>
             
@@ -120,6 +138,15 @@ const Register = () => {
                 autoFocus
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: 'white',
+                    '& fieldset': { borderColor: 'rgba(139, 92, 246, 0.3)' },
+                    '&:hover fieldset': { borderColor: '#8b5cf6' },
+                    '&.Mui-focused fieldset': { borderColor: '#10b981' },
+                  },
+                  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+                }}
               />
               <TextField
                 margin="normal"
@@ -131,6 +158,15 @@ const Register = () => {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: 'white',
+                    '& fieldset': { borderColor: 'rgba(139, 92, 246, 0.3)' },
+                    '&:hover fieldset': { borderColor: '#8b5cf6' },
+                    '&.Mui-focused fieldset': { borderColor: '#10b981' },
+                  },
+                  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+                }}
               />
               <TextField
                 margin="normal"
@@ -142,6 +178,15 @@ const Register = () => {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: 'white',
+                    '& fieldset': { borderColor: 'rgba(139, 92, 246, 0.3)' },
+                    '&:hover fieldset': { borderColor: '#8b5cf6' },
+                    '&.Mui-focused fieldset': { borderColor: '#10b981' },
+                  },
+                  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+                }}
               />
               <TextField
                 margin="normal"
@@ -153,6 +198,15 @@ const Register = () => {
                 id="confirmPassword"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: 'white',
+                    '& fieldset': { borderColor: 'rgba(139, 92, 246, 0.3)' },
+                    '&:hover fieldset': { borderColor: '#8b5cf6' },
+                    '&.Mui-focused fieldset': { borderColor: '#10b981' },
+                  },
+                  '& .MuiInputLabel-root': { color: 'rgba(255, 255, 255, 0.7)' },
+                }}
               />
               <Button
                 type="submit"
@@ -162,6 +216,10 @@ const Register = () => {
                   mt: 3, 
                   mb: 2, 
                   py: 1.5,
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #059669 100%)',
+                  },
                 }}
                 disabled={loading}
               >
@@ -173,11 +231,12 @@ const Register = () => {
                   to="/login" 
                   variant="body2"
                   sx={{
-                    color: 'primary.main',
+                    color: '#10b981',
                     textDecoration: 'none',
                     fontWeight: 600,
                     '&:hover': {
                       textDecoration: 'underline',
+                      color: '#8b5cf6',
                     },
                   }}
                 >
@@ -188,7 +247,8 @@ const Register = () => {
           </Box>
         </Paper>
       </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 };
 

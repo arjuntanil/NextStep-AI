@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { careerAPI } from '../services/api';
+import Aurora from '../components/Aurora';
 import {
   Container,
   Box,
@@ -96,23 +97,33 @@ const CareerAdvisor = () => {
   ];
 
   return (
-    <Container maxWidth="lg">
+    <>
+      {/* Aurora Animated Background */}
+      <Aurora
+        colorStops={['#dc2626', '#f59e0b', '#000000']}
+        blend={0.8}
+        amplitude={1.5}
+        speed={0.4}
+      />
+    
+    <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1, pb: 8 }}>
       <Box sx={{ mb: 5 }}>
         <Typography 
           variant="h2" 
           gutterBottom 
           sx={{ 
             fontWeight: 700, 
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+            background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
             mb: 2,
             fontFamily: 'Space Grotesk',
+            color: 'white',
           }}
         >
           Career Advisor
         </Typography>
-        <Typography variant="h6" color="text.secondary" sx={{ fontWeight: 500 }}>
+        <Typography variant="h6" sx={{ fontWeight: 500, color: 'rgba(255, 255, 255, 0.8)', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
           Get personalized career guidance from our AI
         </Typography>
       </Box>
@@ -128,8 +139,8 @@ const CareerAdvisor = () => {
               position: 'sticky',
               top: 80,
               borderRadius: 3,
-              border: '2px solid #1e3a8a',
-              background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+              border: '2px solid rgba(255,255,255,0.25)',
+              background: 'rgba(255,255,255,0.08)',
               position: 'relative',
               overflow: 'hidden',
               '&::before': {
@@ -140,13 +151,13 @@ const CareerAdvisor = () => {
                 width: '100%',
                 height: '100%',
                 zIndex: 0,
-                opacity: 0.03,
-                backgroundImage: 'radial-gradient(circle at 70% 30%, rgba(14, 165, 233, 0.3) 0%, transparent 40%)',
+                opacity: 0.08,
+                backgroundImage: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,0.5) 0%, transparent 40%)',
                 animation: 'floatUpDown 18s ease-in-out infinite',
               },
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, fontFamily: 'Space Grotesk', color: '#1e3a8a', position: 'relative', zIndex: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, fontFamily: 'Space Grotesk', color: 'white', position: 'relative', zIndex: 1 }}>
               Ask a Question
             </Typography>
             
@@ -165,8 +176,13 @@ const CareerAdvisor = () => {
                   '& .MuiOutlinedInput-root': {
                     borderRadius: 2,
                     fontFamily: 'Space Grotesk',
+                    color: 'rgba(255,255,255,0.95)',
+                    background: 'rgba(255,255,255,0.06)',
+                    '& fieldset': {
+                      borderColor: 'rgba(255,255,255,0.35)'
+                    },
                     '&:hover fieldset': {
-                      borderColor: '#1e3a8a',
+                      borderColor: 'rgba(255,255,255,0.6)',
                       borderWidth: 2,
                     },
                   },
@@ -188,9 +204,10 @@ const CareerAdvisor = () => {
                   borderRadius: 2,
                   fontWeight: 700,
                   fontFamily: 'Space Grotesk',
-                  bgcolor: '#1e3a8a',
+                  bgcolor: 'rgba(255,255,255,0.15)',
+                  color: 'white',
                   '&:hover': {
-                    bgcolor: '#1e40af',
+                    bgcolor: 'rgba(255,255,255,0.25)',
                   },
                 }}
               >
@@ -200,7 +217,7 @@ const CareerAdvisor = () => {
 
             {/* Quick Questions */}
             <Box sx={{ mt: 4 }}>
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: '#1e3a8a', fontFamily: 'Space Grotesk' }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: 'white', fontFamily: 'Space Grotesk' }}>
                 💡 Try These Questions:
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -217,17 +234,18 @@ const CareerAdvisor = () => {
                       textAlign: 'left',
                       fontSize: '0.85rem',
                       fontWeight: 500,
-                      border: '1px solid #3b82f6',
-                      background: 'rgba(59, 130, 246, 0.05)',
+                      border: '1px solid rgba(255,255,255,0.35)',
+                      background: 'rgba(255,255,255,0.06)',
+                      color: 'rgba(255,255,255,0.95)',
                       transition: 'all 0.3s ease',
                       '& .MuiChip-label': {
                         whiteSpace: 'normal',
                         padding: '8px',
                       },
                       '&:hover': {
-                        background: '#1e3a8a',
+                        background: 'rgba(255,255,255,0.18)',
                         color: 'white',
-                        borderColor: '#1e3a8a',
+                        borderColor: 'rgba(255,255,255,0.55)',
                         transform: 'translateX(4px)',
                       },
                     }}
@@ -238,11 +256,11 @@ const CareerAdvisor = () => {
 
             {/* Model Status */}
             {modelStatus && (
-              <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(30, 58, 138, 0.05)', borderRadius: 2 }}>
-                <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, color: '#1e3a8a' }}>
+              <Box sx={{ mt: 3, p: 2, bgcolor: 'rgba(255,255,255,0.06)', borderRadius: 2 }}>
+                <Typography variant="caption" sx={{ fontWeight: 600, display: 'block', mb: 0.5, color: 'rgba(255,255,255,0.9)' }}>
                   {modelStatus.finetuned_career_advisor?.loaded ? '✅ AI Model Ready' : '⏳ Loading Model'}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)' }}>
                   Fine-tuned Career Advisor
                 </Typography>
               </Box>
@@ -259,8 +277,9 @@ const CareerAdvisor = () => {
               display: 'flex',
               flexDirection: 'column',
               borderRadius: 3,
-              border: '2px solid #0ea5e9',
-              background: 'rgba(255, 255, 255, 0.95)',
+              border: '2px solid rgba(255,255,255,0.25)',
+              background: 'rgba(255, 255, 255, 0.08)',
+              backdropFilter: 'blur(20px)',
               overflow: 'hidden',
               position: 'relative',
               '&::before': {
@@ -271,14 +290,14 @@ const CareerAdvisor = () => {
                 width: '100%',
                 height: '100%',
                 zIndex: 0,
-                opacity: 0.02,
-                backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.3) 0%, transparent 50%)',
+                opacity: 0.06,
+                backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.5) 0%, transparent 50%)',
                 animation: 'floatUpDown 25s ease-in-out infinite',
               },
             }}
           >
-            <Box sx={{ p: 2.5, borderBottom: '1px solid #e5e7eb', bgcolor: '#f8fafc', position: 'relative', zIndex: 1 }}>
-              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'Space Grotesk', color: '#0284c7' }}>
+            <Box sx={{ p: 2.5, borderBottom: '1px solid rgba(255,255,255,0.2)', bgcolor: 'transparent', position: 'relative', zIndex: 1 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, fontFamily: 'Space Grotesk', color: 'white' }}>
                 Conversation
               </Typography>
             </Box>
@@ -287,7 +306,7 @@ const CareerAdvisor = () => {
                 flexGrow: 1,
                 overflow: 'auto',
                 p: 3,
-                background: 'linear-gradient(to bottom, #f0f9ff, #ffffff)',
+                background: 'transparent',
                 position: 'relative',
                 zIndex: 1,
               }}
@@ -301,19 +320,19 @@ const CareerAdvisor = () => {
                       mx: 'auto',
                       mb: 3,
                       borderRadius: '50%',
-                      background: 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)',
+                      background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.6) 100%)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       animation: 'floatUpDown 3s ease-in-out infinite',
                     }}
                   >
-                    <AIIcon sx={{ fontSize: 50, color: 'white' }} />
+                    <AIIcon sx={{ fontSize: 50, color: '#0b0b0b' }} />
                   </Box>
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 2, fontFamily: 'Space Grotesk' }}>
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, mb: 2, fontFamily: 'Space Grotesk', color: 'white' }}>
                     Welcome to AI Career Advisor!
                   </Typography>
-                  <Typography variant="body1" color="text.secondary">
+                  <Typography variant="body1" sx={{ color: 'rgba(255,255,255,0.85)' }}>
                     Ask me anything about your career journey
                   </Typography>
                 </Box>
@@ -333,14 +352,14 @@ const CareerAdvisor = () => {
                       sx={{
                         maxWidth: '80%',
                         background: msg.type === 'user'
-                          ? 'linear-gradient(135deg, #1e3a8a 0%, #0ea5e9 100%)'
+                          ? 'rgba(255,255,255,0.18)'
                           : msg.type === 'error'
-                          ? 'rgba(239, 68, 68, 0.1)'
-                          : 'rgba(30, 58, 138, 0.05)',
-                        color: msg.type === 'user' ? 'white' : 'inherit',
+                          ? 'rgba(239, 68, 68, 0.15)'
+                          : 'rgba(255,255,255,0.08)',
+                        color: 'white',
                         borderRadius: 3,
-                        border: msg.type === 'user' ? 'none' : '1px solid #cbd5e1',
-                        boxShadow: msg.type === 'user' ? '0 4px 12px rgba(30, 58, 138, 0.3)' : 'none',
+                        border: '1px solid rgba(255,255,255,0.25)',
+                        boxShadow: '0 4px 12px rgba(255, 255, 255, 0.15)',
                       }}
                     >
                       <CardContent sx={{ p: 2.5 }}>
@@ -350,13 +369,13 @@ const CareerAdvisor = () => {
                             size="small"
                             sx={{
                               mb: 1.5,
-                              bgcolor: '#1e3a8a',
+                              bgcolor: 'rgba(255,255,255,0.2)',
                               color: 'white',
                               fontWeight: 600,
                             }}
                           />
                         )}
-                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: 'Space Grotesk' }}>
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: 'Space Grotesk', color: 'rgba(255,255,255,0.95)' }}>
                           {msg.text}
                         </Typography>
                       </CardContent>
@@ -366,11 +385,11 @@ const CareerAdvisor = () => {
               )}
               {loading && (
                 <Box sx={{ display: 'flex', justifyContent: 'flex-start', mb: 2, animation: 'fadeIn 0.3s ease-out' }}>
-                  <Card elevation={0} sx={{ background: 'rgba(30, 58, 138, 0.05)', border: '1px solid #cbd5e1', borderRadius: 3 }}>
+                  <Card elevation={0} sx={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 3 }}>
                     <CardContent sx={{ p: 2.5 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <CircularProgress size={20} sx={{ color: '#1e3a8a' }} />
-                        <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: 'Space Grotesk' }}>AI is thinking...</Typography>
+                        <CircularProgress size={20} sx={{ color: 'rgba(255,255,255,0.9)' }} />
+                        <Typography variant="body1" sx={{ fontWeight: 600, fontFamily: 'Space Grotesk', color: 'rgba(255,255,255,0.95)' }}>AI is thinking...</Typography>
                       </Box>
                     </CardContent>
                   </Card>
@@ -382,6 +401,7 @@ const CareerAdvisor = () => {
         </Grid>
       </Grid>
     </Container>
+    </>
   );
 };
 
