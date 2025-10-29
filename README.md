@@ -46,7 +46,7 @@
 
 | Feature | Technology | Impact |
 |---------|-----------|--------|
-| **Resume Analysis** | Gemini LLM + Scikit-learn | 85% job prediction accuracy |
+| **CV Analysis** | Multinomial Naive Bayes + Scikit-learn | 85% job prediction accuracy |
 | **Career Advisor** | Fine-tuned GPT-2 (355M params) | Context-aware career guidance |
 | **RAG Coach** | TinyLLama 1.1B + FAISS | Privacy-first document Q&A |
 | **Job Scraping** | BeautifulSoup + LinkedIn | Real-time opportunities |
@@ -70,7 +70,7 @@
 
 **Workflow:**
 ```
-PDF/DOCX Upload → Gemini Skill Extraction → ML Job Prediction → 
+PDF/DOCX Upload → Skill Extraction → ML Job Prediction → 
 Gap Analysis → ATS Feedback → LinkedIn Job Scraping → YouTube Tutorials
 ```
 
