@@ -78,34 +78,28 @@ const Layout = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', position: 'relative' }}>
       {/* Aurora Background */}
-      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, bgcolor: '#000000' }}>
+      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: -1, bgcolor: '#0a0e27' }}>
         <Aurora
-          colorStops={["#8b5cf6", "#6366f1", "#3b82f6", "#10b981"]}
+          colorStops={["#8b5cf6", "#3b82f6", "#10b981"]}
           blend={0.8}
-          amplitude={1.8}
-          speed={0.5}
+          amplitude={1.5}
+          speed={0.4}
         />
       </Box>
       
       {/* Header */}
       <AppBar 
         position="sticky" 
-        elevation={0}
+        elevation={1}
         sx={{ 
-          background: 'rgba(10, 14, 39, 0.6)',
-          borderRadius: { xs: 0, md: '2rem' },
+          bgcolor: 'rgba(10, 14, 39, 0.8)', 
           backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(139, 92, 246, 0.2)',
-          boxShadow: 'none',
-          width: { xs: '100%', md: '90%' },
-          mx: 'auto',
-          mt: { xs: 0, md: 2 },
-          left: '50%',
-          transform: { xs: 'none', md: 'translateX(-50%)' },
+          borderBottom: '1px solid',
+          borderColor: 'rgba(139, 92, 246, 0.2)',
         }}
       >
         <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ justifyContent: 'space-between', px: { xs: 2, md: 4 } }}>
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
             {/* Logo */}
             <Box 
               onClick={() => navigate('/')}
@@ -120,7 +114,9 @@ const Layout = () => {
                 variant="h5"
                 sx={{
                   fontWeight: 800,
-                  color: 'white',
+                  background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
                   letterSpacing: '-0.5px',
                   fontFamily: 'Space Grotesk',
                 }}
@@ -134,10 +130,9 @@ const Layout = () => {
               <Button
                 onClick={() => navigate('/')}
                 sx={{
-                  color: location.pathname === '/' ? '#10b981' : 'rgba(255, 255, 255, 0.9)',
+                  color: location.pathname === '/' ? '#8b5cf6' : 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 600,
                   px: 2,
-                  '&:hover': { color: '#10b981' },
                 }}
               >
                 Home
@@ -148,10 +143,9 @@ const Layout = () => {
                   color: 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 600,
                   px: 2,
-                  '&:hover': { color: '#3b82f6' },
                 }}
               >
-                Services
+                Features
               </Button>
               <Menu
                 anchorEl={featuresAnchor}
@@ -162,8 +156,6 @@ const Layout = () => {
                     mt: 1,
                     minWidth: 200,
                     boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-                    bgcolor: 'rgba(10, 14, 39, 0.95)',
-                    backdropFilter: 'blur(20px)',
                   },
                 }}
               >
@@ -175,7 +167,6 @@ const Layout = () => {
                     sx={{
                       py: 1.5,
                       fontWeight: 500,
-                      color: 'white',
                       '&.Mui-selected': {
                         bgcolor: 'primary.light',
                         color: 'white',
@@ -195,38 +186,25 @@ const Layout = () => {
                   color: location.pathname === '/about' ? '#10b981' : 'rgba(255, 255, 255, 0.9)',
                   fontWeight: 600,
                   px: 2,
-                  '&:hover': { color: '#10b981' },
                 }}
               >
                 About
               </Button>
-              <Button
-                sx={{
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  fontWeight: 600,
-                  px: 2,
-                  '&:hover': { color: '#10b981' },
-                }}
-              >
-                Contact
-              </Button>
 
-              {/* User Menu - Login Button on Right */}
+              {/* User Menu */}
               <Button
                 onClick={handleUserClick}
                 startIcon={<PersonIcon />}
                 variant="outlined"
                 sx={{
-                  ml: 3,
+                  ml: 2,
                   borderWidth: 2,
-                  borderColor: 'rgba(255, 255, 255, 0.3)',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  borderRadius: '12px',
+                  borderColor: '#8b5cf6',
+                  color: '#8b5cf6',
                   '&:hover': {
                     borderWidth: 2,
                     borderColor: '#10b981',
-                    bgcolor: 'rgba(16, 185, 129, 0.1)',
-                    color: '#10b981',
+                    bgcolor: 'rgba(139, 92, 246, 0.1)',
                   },
                 }}
               >
@@ -244,10 +222,10 @@ const Layout = () => {
                   },
                 }}
               >
-                <MenuItem disabled sx={{ opacity: 1, fontWeight: 600, color: 'white' }}>
+                <MenuItem disabled sx={{ opacity: 1, fontWeight: 600 }}>
                   {user?.email}
                 </MenuItem>
-                <MenuItem disabled sx={{ opacity: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
+                <MenuItem disabled sx={{ opacity: 1 }}>
                   Role: {user?.role || 'user'}
                 </MenuItem>
                 <MenuItem onClick={handleLogout} sx={{ color: 'error.main', fontWeight: 600 }}>
@@ -316,6 +294,17 @@ const Layout = () => {
           flexGrow: 1, 
           py: 4,
           position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(10, 14, 39, 0.7)',
+            backdropFilter: 'blur(10px)',
+            zIndex: -1,
+          },
         }}
       >
         <Container maxWidth="xl">
@@ -330,7 +319,7 @@ const Layout = () => {
           py: 3,
           px: 2,
           mt: 'auto',
-          bgcolor: 'rgba(10, 14, 39, 0.6)',
+          bgcolor: 'rgba(10, 14, 39, 0.9)',
           backdropFilter: 'blur(10px)',
           borderTop: '1px solid',
           borderColor: 'rgba(139, 92, 246, 0.2)',
