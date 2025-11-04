@@ -75,9 +75,8 @@ const CareerAdvisor = () => {
       setConversation(prev => [...prev, aiMessage]);
     } catch (err) {
       console.error('Error getting career advice:', err);
-      // Fix: Better error handling
-      const errorMessageText = err.response?.data?.detail || 
-                              (err.response?.data ? JSON.stringify(err.response.data) : 'Failed to get career advice. Please try again.');
+      const detail = err.response?.data?.detail;
+      const errorMessageText = typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : (err.response?.data ? JSON.stringify(err.response.data) : 'Failed to get career advice. Please try again.'));
       setError(errorMessageText);
       const errorMessage = {
         type: 'error',
@@ -113,9 +112,6 @@ const CareerAdvisor = () => {
           gutterBottom 
           sx={{ 
             fontWeight: 700, 
-            background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
             mb: 2,
             fontFamily: 'Space Grotesk',
             color: 'white',
@@ -139,22 +135,12 @@ const CareerAdvisor = () => {
               position: 'sticky',
               top: 80,
               borderRadius: 3,
-              border: '2px solid rgba(255,255,255,0.25)',
-              background: 'rgba(255,255,255,0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(26, 24, 24, 0.95)',
+              backdropFilter: 'blur(10px)',
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
               position: 'relative',
               overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                zIndex: 0,
-                opacity: 0.08,
-                backgroundImage: 'radial-gradient(circle at 70% 30%, rgba(255,255,255,0.5) 0%, transparent 40%)',
-                animation: 'floatUpDown 18s ease-in-out infinite',
-              },
             }}
           >
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, fontFamily: 'Space Grotesk', color: 'white', position: 'relative', zIndex: 1 }}>
@@ -277,23 +263,11 @@ const CareerAdvisor = () => {
               display: 'flex',
               flexDirection: 'column',
               borderRadius: 3,
-              border: '2px solid rgba(255,255,255,0.25)',
-              background: 'rgba(255, 255, 255, 0.08)',
-              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(26, 24, 24, 0.95)',
+              backdropFilter: 'blur(10px)',
               overflow: 'hidden',
               position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                zIndex: 0,
-                opacity: 0.06,
-                backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(255,255,255,0.5) 0%, transparent 50%)',
-                animation: 'floatUpDown 25s ease-in-out infinite',
-              },
             }}
           >
             <Box sx={{ p: 2.5, borderBottom: '1px solid rgba(255,255,255,0.2)', bgcolor: 'transparent', position: 'relative', zIndex: 1 }}>

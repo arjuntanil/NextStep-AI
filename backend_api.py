@@ -1019,6 +1019,96 @@ async def analyze_resume(
         "layout_feedback": layout_feedback
     }
 
+# --- Resume Analysis with Job Description ---
+@app.post("/analyze_resume_with_jd/", tags=["AI Features"])
+async def analyze_resume_with_jd(
+    resume: UploadFile = File(...),
+    job_description: UploadFile = File(...),
+    db: SessionLocal = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """Analyze resume against a job description document."""
+    if not all([job_recommender_pipeline, title_encoder, prioritized_skills]):
+        raise HTTPException(status_code=503, detail="Resume analysis models are not loaded.")
+    
+    # 1. Parse Resume
+    resume_bytes = await resume.read()
+    resume_text = ""
+    if resume.filename.endswith(".pdf"): 
+        resume_text = extract_text_from_pdf(resume_bytes)
+    elif resume.filename.endswith(".docx"): 
+        resume_text = extract_text_from_docx(resume_bytes)
+    else: 
+        raise HTTPException(status_code=400, detail="Resume must be PDF or DOCX")
+    
+    # 2. Parse Job Description
+    jd_bytes = await job_description.read()
+    jd_text = ""
+    if job_description.filename.endswith(".pdf"):
+        jd_text = extract_text_from_pdf(jd_bytes)
+    elif job_description.filename.endswith(".docx"):
+        jd_text = extract_text_from_docx(jd_bytes)
+    elif job_description.filename.endswith(".txt"):
+        jd_text = jd_bytes.decode('utf-8', errors='ignore')
+    else:
+        raise HTTPException(status_code=400, detail="Job description must be PDF, DOCX, or TXT")
+    
+    # 3. Extract skills from resume
+    print("Extracting skills from resume...")
+    resume_skills = extract_skills_with_llm(resume_text)
+    if not resume_skills:
+        raise HTTPException(status_code=404, detail="Could not extract skills from resume")
+    
+    # 4. Extract skills from JD
+    print("Extracting skills from job description...")
+    jd_skills = extract_skills_with_llm(jd_text)
+    if not jd_skills:
+        jd_skills = []  # Don't fail if JD parsing fails
+    
+    # 5. Calculate match
+    resume_skills_set = set(resume_skills)
+    jd_skills_set = set(jd_skills) if jd_skills else set()
+    
+    matching_skills = list(resume_skills_set.intersection(jd_skills_set))
+    missing_skills = list(jd_skills_set - resume_skills_set)
+    
+    # Calculate ATS score
+    if jd_skills_set:
+        ats_score = (len(matching_skills) / len(jd_skills_set)) * 100
+    else:
+        # If no JD skills extracted, use resume skills against model prediction
+        user_skills_str = ' '.join(resume_skills)
+        predicted_title_encoded = job_recommender_pipeline.predict([user_skills_str])[0]
+        recommended_job_title = title_encoder.inverse_transform([predicted_title_encoded])[0]
+        required_skills = prioritized_skills.get(recommended_job_title, [])
+        required_skills_set = set(required_skills)
+        ats_score = (len(required_skills_set.intersection(resume_skills_set)) / len(required_skills_set)) * 100 if required_skills_set else 100.0
+    
+    # 6. Generate feedback
+    print("Generating feedback...")
+    layout_feedback = generate_layout_feedback(resume_text)
+    
+    # 7. Get YouTube links for missing skills
+    missing_skills_with_links = [
+        {"skill_name": skill, "youtube_link": youtube_links_db.get(skill, {}).get('link', '#')}
+        for skill in missing_skills
+    ]
+    
+    return {
+        "resume_skills": resume_skills,
+        "skills": resume_skills,  # Frontend compatibility
+        "jd_skills": jd_skills,
+        "matching_skills": matching_skills,
+        "missing_skills": missing_skills,
+        "skills_to_add": missing_skills,  # Frontend compatibility
+        "missing_skills_with_links": missing_skills_with_links,
+        "ats_score": round(ats_score, 2),
+        "match_percentage": round(ats_score, 2),  # Frontend compatibility
+        "layout_feedback": layout_feedback,
+        "resume_filename": resume.filename,
+        "jd_filename": job_description.filename
+    }
+
 # --- Fine-tuned Career Advisor Endpoint ---
 @app.post("/query-career-path/", tags=["AI Career Advisor"])
 async def query_career_path(
@@ -1301,11 +1391,17 @@ class RAGCoachUploadResponse(BaseModel):
 
 @app.post("/rag-coach/upload", response_model=RAGCoachUploadResponse, tags=["RAG Coach"])
 async def upload_rag_documents(
-    files: List[UploadFile] = File(...),
+    files: List[UploadFile] = File(None),
+    resume: UploadFile = File(None),
+    job_description: UploadFile = File(None),
     process_resume_job: bool = Form(False),
     current_user: User = Depends(get_current_user_optional)
 ):
-    """Upload PDF documents for RAG Coach and kick off background indexing."""
+    """Upload PDF documents for RAG Coach and kick off background indexing.
+    Accepts either: 
+    - files: list of files
+    - resume + job_description: individual files
+    """
     import shutil
     from pathlib import Path
     import threading
@@ -1313,11 +1409,25 @@ async def upload_rag_documents(
     upload_dir = Path("./uploads")
     upload_dir.mkdir(exist_ok=True)
 
+    # Collect all files from different input methods
+    all_files = []
+    if files:
+        all_files.extend(files)
+    if resume:
+        all_files.append(resume)
+    if job_description:
+        all_files.append(job_description)
+    
+    if not all_files:
+        raise HTTPException(status_code=422, detail="No files provided. Use 'files', 'resume', or 'job_description' fields.")
+
     uploaded_files = []
 
-    for file in files:
+    for file in all_files:
         if not file.filename.lower().endswith('.pdf'):
-            raise HTTPException(status_code=400, detail=f"File {file.filename} is not a PDF")
+            # For non-PDF files, skip with warning but don't fail
+            logging.warning(f"[SKIP] {file.filename} is not a PDF, skipping")
+            continue
 
         file_path = upload_dir / file.filename
         # Save uploaded file - read content first to avoid stream issues

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import { ragAPI } from '../services/api';
 import Aurora from '../components/Aurora';
 import {
@@ -59,6 +60,21 @@ const RAGCoach = () => {
   const handleResumeChange = (event) => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
+      // Validate file
+      if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
+        setError('Resume must be a PDF file');
+        return;
+      }
+      if (selectedFile.size === 0) {
+        setError('Resume file is empty');
+        return;
+      }
+      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+        setError('Resume file is too large (max 10MB)');
+        return;
+      }
+      
+      console.log('Resume file selected:', selectedFile.name, selectedFile.size, 'bytes');
       setResumeFile(selectedFile);
       setResumeFileName(selectedFile.name);
       setError('');
@@ -68,6 +84,21 @@ const RAGCoach = () => {
   const handleJobDescChange = (event) => {
     const selectedFile = event.target.files[0];
     if (selectedFile) {
+      // Validate file
+      if (!selectedFile.name.toLowerCase().endsWith('.pdf')) {
+        setError('Job description must be a PDF file');
+        return;
+      }
+      if (selectedFile.size === 0) {
+        setError('Job description file is empty');
+        return;
+      }
+      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+        setError('Job description file is too large (max 10MB)');
+        return;
+      }
+      
+      console.log('Job desc file selected:', selectedFile.name, selectedFile.size, 'bytes');
       setJobDescFile(selectedFile);
       setJobDescFileName(selectedFile.name);
       setError('');
@@ -85,13 +116,64 @@ const RAGCoach = () => {
     setError('');
 
     try {
+      console.log('=== UPLOAD DEBUG START ===');
+      console.log('Resume File Object:', resumeFile);
+      console.log('  - name:', resumeFile.name);
+      console.log('  - type:', resumeFile.type);
+      console.log('  - size:', resumeFile.size);
+      console.log('  - lastModified:', resumeFile.lastModified);
+      
+      console.log('Job Desc File Object:', jobDescFile);
+      console.log('  - name:', jobDescFile.name);
+      console.log('  - type:', jobDescFile.type);
+      console.log('  - size:', jobDescFile.size);
+      console.log('  - lastModified:', jobDescFile.lastModified);
+
+      // Create FormData - CRITICAL: Don't specify filename, let File object provide it
       const formData = new FormData();
-      formData.append('files', resumeFile);
-      formData.append('files', jobDescFile);
+      formData.append('files', resumeFile);  // File object already has name, type, data
+      formData.append('files', jobDescFile); // File object already has name, type, data
       formData.append('process_resume_job', 'true');
 
-      const response = await ragAPI.uploadDocuments(formData);
-      console.log('Upload response:', response.data);
+      // Debug FormData
+      console.log('\nFormData entries:');
+      for (let [key, value] of formData.entries()) {
+        if (value instanceof File) {
+          console.log(`  ${key}:`, value.name, value.type, value.size, 'bytes');
+        } else {
+          console.log(`  ${key}:`, value);
+        }
+      }
+
+      console.log('\nSending POST request using AXIOS (not fetch)...');
+      
+      // Use axios instead of fetch - it handles multipart/form-data better
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://127.0.0.1:8000/rag-coach/upload',
+        formData,
+        {
+          headers: {
+            // Do NOT set Content-Type - axios will set it correctly with boundary
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        }
+      );
+
+      console.log('\nResponse received:');
+      console.log('  - status:', response.status);
+      console.log('  - statusText:', response.statusText);
+      console.log('  - data:', response.data);
+      
+      if (response.status !== 200) {
+        console.error('❌ Upload failed!');
+        console.error('Error detail:', response.data);
+        throw new Error(response.data.detail || JSON.stringify(response.data));
+      }
+
+      const data = response.data;
+      console.log('✅ Upload successful!');
+      console.log('=== UPLOAD DEBUG END ===');
       
       // Poll for processed results
       let attempts = 0;
@@ -117,7 +199,7 @@ const RAGCoach = () => {
 
     } catch (err) {
       console.error('Error uploading files:', err);
-      setError(err.response?.data?.detail || 'Failed to upload files. Please try again.');
+      setError(err.message || 'Failed to upload files. Please try again.');
       setProcessing(false);
     } finally {
       setUploading(false);

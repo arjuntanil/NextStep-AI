@@ -36,7 +36,7 @@ const LandingPage = () => {
       title: 'Resume Analyzer with JD',
       desc: 'Compare your resume with a job description and identify matching strengths.',
       color: '#10b981',
-      path: '/cv-analyzer',
+      path: '/resume-analyzer',
     },
   ];
 

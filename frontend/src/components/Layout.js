@@ -66,6 +66,7 @@ const Layout = () => {
 
   const features = [
     { name: 'CV Analyzer', path: '/cv-analyzer' },
+    { name: 'Resume Analyzer with JD', path: '/resume-analyzer' },
     { name: 'Career Advisor', path: '/career-advisor' },
     { name: 'RAG Coach', path: '/rag-coach' },
     { name: 'History', path: '/history' },
@@ -90,16 +91,16 @@ const Layout = () => {
       {/* Header */}
       <AppBar 
         position="sticky" 
-        elevation={1}
+        elevation={0}
         sx={{ 
-          bgcolor: 'rgba(10, 14, 39, 0.8)', 
-          backdropFilter: 'blur(20px)',
-          borderBottom: '1px solid',
-          borderColor: 'rgba(139, 92, 246, 0.2)',
+          bgcolor: 'transparent',
+          border: 'none',
+          boxShadow: 'none',
+          py: 2,
         }}
       >
-        <Container maxWidth="xl">
-          <Toolbar disableGutters sx={{ justifyContent: 'space-between' }}>
+        <Container maxWidth="lg">
+          <Toolbar disableGutters sx={{ justifyContent: 'space-between', p: 1.25, borderRadius: 3, backdropFilter: 'blur(20px)', bgcolor: 'rgba(10, 14, 39, 0.8)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
             {/* Logo */}
             <Box 
               onClick={() => navigate('/')}
@@ -114,9 +115,7 @@ const Layout = () => {
                 variant="h5"
                 sx={{
                   fontWeight: 800,
-                  background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
+                  color: '#FFFFFF',
                   letterSpacing: '-0.5px',
                   fontFamily: 'Space Grotesk',
                 }}
@@ -199,12 +198,12 @@ const Layout = () => {
                 sx={{
                   ml: 2,
                   borderWidth: 2,
-                  borderColor: '#8b5cf6',
-                  color: '#8b5cf6',
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                  color: '#FFFFFF',
                   '&:hover': {
                     borderWidth: 2,
-                    borderColor: '#10b981',
-                    bgcolor: 'rgba(139, 92, 246, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.6)',
+                    bgcolor: 'rgba(255, 255, 255, 0.1)',
                   },
                 }}
               >

@@ -46,7 +46,7 @@ const Dashboard = () => {
       title: 'Resume Analyzer with JD',
       desc: 'Compare your resume with a job description and identify matching strengths.',
       color: '#3b82f6',
-      path: '/cv-analyzer',
+      path: '/resume-analyzer',
     },
   ];
 
@@ -313,7 +313,7 @@ const Dashboard = () => {
           <Button
             variant="contained"
             size="large"
-            onClick={() => navigate('/cv-analyzer')}
+            onClick={() => navigate('/resume-analyzer')}
             sx={{
               background: 'linear-gradient(135deg, #8b5cf6 0%, #10b981 100%)',
               fontWeight: 700,

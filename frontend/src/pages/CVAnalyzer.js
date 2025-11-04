@@ -69,8 +69,8 @@ const CVAnalyzer = () => {
       setResult(response.data);
     } catch (err) {
       console.error('Error analyzing resume:', err);
-      const errorMessage = err.response?.data?.detail || 
-                          (err.response?.data ? JSON.stringify(err.response.data) : 'Failed to analyze resume. Please try again.');
+      const detail = err.response?.data?.detail;
+      const errorMessage = typeof detail === 'string' ? detail : (detail ? JSON.stringify(detail) : (err.response?.data ? JSON.stringify(err.response.data) : 'Failed to analyze resume. Please try again.'));
       setError(errorMessage);
     } finally {
       setLoading(false);

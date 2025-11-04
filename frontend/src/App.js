@@ -11,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import CVAnalyzer from './pages/CVAnalyzer';
+import ResumeAnalyzer from './pages/ResumeAnalyzer';
 import CareerAdvisor from './pages/CareerAdvisor';
 import RAGCoach from './pages/RAGCoach';
 import History from './pages/History';
@@ -36,6 +37,7 @@ function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="cv-analyzer" element={<CVAnalyzer />} />
+              <Route path="resume-analyzer" element={<ResumeAnalyzer />} />
               <Route path="career-advisor" element={<CareerAdvisor />} />
               <Route path="rag-coach" element={<RAGCoach />} />
               <Route path="history" element={<History />} />

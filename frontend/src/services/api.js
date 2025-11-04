@@ -16,6 +16,12 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // For multipart/form-data, delete Content-Type to let browser set it
+    if (config.headers['Content-Type'] === undefined) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
@@ -50,7 +56,11 @@ export const authAPI = {
 export const cvAPI = {
   analyzeResume: (formData) => 
     api.post('/analyze_resume/', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },  // Let browser set boundary
+    }),
+  analyzeResumeWithJD: (formData) =>
+    api.post('/analyze_resume_with_jd/', formData, {
+      headers: { 'Content-Type': undefined },  // Let browser set boundary
     }),
 };
 
@@ -72,13 +82,19 @@ export const careerAPI = {
 export const ragAPI = {
   uploadDocument: (formData) => 
     api.post('/rag-coach/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': undefined },  // Let browser set boundary
     }),
   
-  uploadDocuments: (formData) => 
-    api.post('/rag-coach/upload?process_resume_job=true', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }),
+  uploadDocuments: (formData) => {
+    // Direct axios call to bypass potential interceptor issues
+    const token = localStorage.getItem('token');
+    return axios.post(`${API_BASE_URL}/rag-coach/upload`, formData, {
+      headers: {
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        // Don't set Content-Type - let browser handle it
+      },
+    });
+  },
   
   getProcessedResult: () => 
     api.get('/rag-coach/processed-result'),
