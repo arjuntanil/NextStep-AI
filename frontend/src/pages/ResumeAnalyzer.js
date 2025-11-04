@@ -94,13 +94,25 @@ const ResumeAnalyzer = () => {
             gutterBottom 
             sx={{ 
               fontWeight: 700, 
-              mb: 2,
+              mb: 0.5,
               fontFamily: 'Space Grotesk',
               color: 'white',
               textShadow: '0 2px 8px rgba(0,0,0,0.8)',
             }}
           >
-            Resume Analyzer (With JD)
+            Resume Analyzer
+          </Typography>
+          <Typography 
+            variant="body2" 
+            sx={{ 
+              fontWeight: 400, 
+              color: 'rgba(255, 255, 255, 0.6)', 
+              textShadow: '0 1px 3px rgba(0,0,0,0.8)',
+              mb: 2,
+              fontSize: '1.1rem'
+            }}
+          >
+            with Job Description
           </Typography>
           <Typography variant="h6" sx={{ fontWeight: 500, color: 'rgba(255, 255, 255, 0.8)', textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>
             Upload resume and job description to get ATS insights

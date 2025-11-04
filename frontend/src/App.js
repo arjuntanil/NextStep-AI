@@ -16,6 +16,7 @@ import CareerAdvisor from './pages/CareerAdvisor';
 import RAGCoach from './pages/RAGCoach';
 import History from './pages/History';
 import About from './pages/About';
+import AdminDashboard from './pages/AdminDashboard';
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
               <Route path="rag-coach" element={<RAGCoach />} />
               <Route path="history" element={<History />} />
               <Route path="about" element={<About />} />
+              <Route path="admin" element={<AdminDashboard />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

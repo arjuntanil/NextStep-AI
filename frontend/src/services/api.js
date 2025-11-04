@@ -117,4 +117,30 @@ export const historyAPI = {
     api.get('/history/rag-queries'),
 };
 
+export const adminAPI = {
+  login: (email, password) =>
+    api.post('/admin/login', { email, password }),
+  
+  getStats: () =>
+    api.get('/admin/stats'),
+  
+  getUsers: (params) =>
+    api.get('/admin/users', { params }),
+  
+  getUser: (userId) =>
+    api.get(`/admin/user/${userId}`),
+  
+  suspendUser: (userId) =>
+    api.put(`/admin/user/${userId}/suspend`),
+  
+  activateUser: (userId) =>
+    api.put(`/admin/user/${userId}/activate`),
+  
+  deleteUser: (userId) =>
+    api.delete(`/admin/user/${userId}`),
+  
+  createUser: (userData) =>
+    api.post('/admin/user/create', userData),
+};
+
 export default api;

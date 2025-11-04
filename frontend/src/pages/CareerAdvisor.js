@@ -336,22 +336,142 @@ const CareerAdvisor = () => {
                         boxShadow: '0 4px 12px rgba(255, 255, 255, 0.15)',
                       }}
                     >
-                      <CardContent sx={{ p: 2.5 }}>
+                      <CardContent sx={{ p: 3 }}>
                         {msg.type === 'ai' && msg.model && (
                           <Chip
                             label={msg.model}
                             size="small"
+                            icon={<BrainIcon sx={{ fontSize: 16 }} />}
                             sx={{
-                              mb: 1.5,
-                              bgcolor: 'rgba(255,255,255,0.2)',
-                              color: 'white',
+                              mb: 2,
+                              bgcolor: 'rgba(139, 92, 246, 0.2)',
+                              color: '#a78bfa',
                               fontWeight: 600,
+                              border: '1px solid rgba(139, 92, 246, 0.3)',
                             }}
                           />
                         )}
-                        <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: 'Space Grotesk', color: 'rgba(255,255,255,0.95)' }}>
-                          {msg.text}
-                        </Typography>
+                        {msg.type === 'ai' ? (
+                          <Box sx={{ 
+                            '& h3': { 
+                              fontSize: '1.25rem', 
+                              fontWeight: 700, 
+                              color: '#fff', 
+                              mb: 2, 
+                              mt: 3,
+                              borderBottom: '2px solid rgba(139, 92, 246, 0.5)',
+                              pb: 1,
+                              fontFamily: 'Space Grotesk'
+                            },
+                            '& h4': { 
+                              fontSize: '1.1rem', 
+                              fontWeight: 600, 
+                              color: '#e0e0e0', 
+                              mb: 1.5, 
+                              mt: 2.5,
+                              fontFamily: 'Space Grotesk'
+                            },
+                            '& p': { 
+                              lineHeight: 1.8, 
+                              color: 'rgba(255,255,255,0.85)', 
+                              mb: 1.5,
+                              fontSize: '0.95rem'
+                            },
+                            '& ul, & ol': { 
+                              pl: 3, 
+                              mb: 2,
+                              '& li': {
+                                mb: 1,
+                                lineHeight: 1.7,
+                                color: 'rgba(255,255,255,0.85)',
+                                position: 'relative',
+                                '&::marker': {
+                                  color: '#a78bfa'
+                                }
+                              }
+                            },
+                            '& strong, & b': { 
+                              color: '#fff', 
+                              fontWeight: 700 
+                            },
+                            '& em, & i': { 
+                              color: '#d8b4fe',
+                              fontStyle: 'italic'
+                            },
+                            '& code': {
+                              bgcolor: 'rgba(139, 92, 246, 0.15)',
+                              color: '#c4b5fd',
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: 1,
+                              fontSize: '0.9em',
+                              fontFamily: 'monospace'
+                            }
+                          }}>
+                            {msg.text.split('\n').map((line, i) => {
+                              // Headers (###, ####)
+                              if (line.startsWith('### ')) {
+                                return <Typography key={i} component="h3">{line.substring(4)}</Typography>;
+                              } else if (line.startsWith('#### ')) {
+                                return <Typography key={i} component="h4">{line.substring(5)}</Typography>;
+                              } 
+                              // Bullet points
+                              else if (line.trim().startsWith('*   ') || line.trim().startsWith('* ')) {
+                                const content = line.trim().substring(line.trim().indexOf('*') + 1).trim();
+                                return (
+                                  <Box key={i} component="li" sx={{ 
+                                    listStyleType: 'none',
+                                    pl: 2,
+                                    mb: 1,
+                                    position: 'relative',
+                                    '&:before': {
+                                      content: '"▸"',
+                                      position: 'absolute',
+                                      left: 0,
+                                      color: '#a78bfa',
+                                      fontWeight: 'bold'
+                                    }
+                                  }}>
+                                    {content.split('**').map((part, j) => 
+                                      j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+                                    )}
+                                  </Box>
+                                );
+                              }
+                              // Numbered lists
+                              else if (/^\d+\.\s/.test(line.trim())) {
+                                const content = line.trim().substring(line.trim().indexOf('.') + 1).trim();
+                                return (
+                                  <Box key={i} component="li" sx={{ 
+                                    listStyleType: 'decimal',
+                                    ml: 3,
+                                    mb: 1,
+                                    color: 'rgba(255,255,255,0.85)',
+                                    '&::marker': { color: '#a78bfa' }
+                                  }}>
+                                    {content}
+                                  </Box>
+                                );
+                              }
+                              // Regular paragraphs
+                              else if (line.trim()) {
+                                return (
+                                  <Typography key={i} component="p">
+                                    {line.split('**').map((part, j) => 
+                                      j % 2 === 1 ? <strong key={j}>{part}</strong> : part
+                                    )}
+                                  </Typography>
+                                );
+                              }
+                              // Empty lines
+                              return <Box key={i} sx={{ height: 8 }} />;
+                            })}
+                          </Box>
+                        ) : (
+                          <Typography variant="body1" sx={{ lineHeight: 1.7, fontFamily: 'Space Grotesk', color: 'rgba(255,255,255,0.95)' }}>
+                            {msg.text}
+                          </Typography>
+                        )}
                       </CardContent>
                     </Card>
                   </Box>
