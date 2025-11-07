@@ -15,7 +15,10 @@
 - [Installation](#installation)
 - [Usage](#usage)
 - [API Reference](#api-reference)
+- [Project Structure](#project-structure)
 - [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
 
 ---
 
@@ -46,19 +49,22 @@
 
 | Feature | Technology | Impact |
 |---------|-----------|--------|
-| **CV Analysis** | Multinomial Naive Bayes + Scikit-learn | 85% job prediction accuracy |
+| **CV Analysis** | Multinomial Naive Bayes + TF-IDF | 85% job prediction accuracy |
+| **Resume-JD Matcher** | Cosine similarity + Gemini API | Precise skill gap identification |
 | **Career Advisor** | Fine-tuned GPT-2 (355M params) | Context-aware career guidance |
 | **RAG Coach** | TinyLLama 1.1B + FAISS | Privacy-first document Q&A |
+| **Admin Dashboard** | Recharts + Material-UI | Comprehensive analytics |
 | **Job Scraping** | BeautifulSoup + LinkedIn | Real-time opportunities |
-| **Aurora UI** | React + OGL (WebGL) | GPU-accelerated animations |
+| **Wozber UI** | React + OGL (WebGL) | Modern minimalist design |
 
 ### Why This Matters
 
 ✅ **Personalized** - AI analyzes YOUR resume against YOUR target jobs  
 ✅ **Data-Driven** - 8000+ job mappings, 749 career examples, live job data  
-✅ **Privacy-First** - TinyLLama runs locally (no API calls for RAG)  
-✅ **Production-Ready** - JWT auth, SQLite/PostgreSQL, comprehensive logging  
-✅ **Modern UI** - Dark theme, glassmorphism, Aurora WebGL background  
+✅ **Privacy-First** - TinyLLama runs locally via Ollama (no external API calls for RAG)  
+✅ **Production-Ready** - JWT auth, SQLite database, role-based access control, admin dashboard  
+✅ **Modern UI** - Wozber-style light theme, premium formatting, Aurora WebGL background  
+✅ **Comprehensive Analytics** - User tracking, retention metrics, engagement monitoring  
 
 ---
 
@@ -80,12 +86,14 @@ Gap Analysis → ATS Feedback → LinkedIn Job Scraping → YouTube Tutorials
 - ✅ Skills to learn with YouTube tutorials
 - ✅ Live LinkedIn job postings
 - ✅ ATS optimization feedback
+- ✅ History tracking (logged-in users)
 
 **Technologies:**
-- **Skill Extraction:** Google Gemini Pro (with RegEx fallback)
-- **Job Classification:** TF-IDF + Naive Bayes (8000+ training examples)
+- **Skill Extraction:** Google Gemini Pro (with 100+ RegEx fallback patterns)
+- **Job Classification:** TF-IDF + Multinomial Naive Bayes (8000+ training examples)
 - **Job Scraping:** BeautifulSoup4 (LinkedIn India)
 - **File Parsing:** pdfplumber, python-docx
+- **Validation:** skills_db.json (10,000+ valid skills)
 
 ---
 
@@ -130,7 +138,32 @@ Answer:
 
 ---
 
-### 3. 📚 RAG Coach
+### 3. 🎯 Resume Analyzer with Job Description
+
+**Upload both resume and job description for precise matching**
+
+**Workflow:**
+```
+Resume + JD Upload → Dual Skill Extraction → Semantic Matching → 
+ATS Score Calculation → Gap Analysis → YouTube Learning Paths
+```
+
+**Output:**
+- ✅ ATS compatibility score (0-100%)
+- ✅ Matching skills (green indicators)
+- ✅ Missing critical skills (red indicators with YouTube links)
+- ✅ ATS optimization tips (blue card)
+- ✅ All detected skills (purple card)
+
+**Technologies:**
+- **Skill Extraction:** Dual Gemini API calls (resume + JD)
+- **Matching:** Cosine similarity + set operations
+- **Learning Paths:** YouTube API integration
+- **File Support:** PDF, DOCX for both documents
+
+---
+
+### 4. 📚 RAG Coach
 
 **Upload resume + job description PDFs for personalized guidance**
 
@@ -175,6 +208,32 @@ Chunking Strategy:
 
 ---
 
+### 5. 📊 Admin Dashboard (New!)
+
+**Comprehensive analytics and user management for administrators**
+
+**Features:**
+- **KPI Cards:** Total users, active users (7d/30d), analyses, average match score
+- **Retention Metrics:** Overall, 7-day, and 30-day retention rates
+- **User Growth Chart:** 30-day time-series visualization
+- **Match Score Distribution:** Pie chart categorizing ATS scores
+- **Top Jobs & Skills:** Bar charts showing most recommended jobs and missing skills
+- **Recent Activity Feed:** Real-time user action tracking
+- **User Management:** Suspend, activate, delete users
+
+**Technologies:**
+- **Charts:** Recharts (Area, Bar, Pie charts)
+- **Data Visualization:** Material-UI Grid with responsive layout
+- **Backend:** Comprehensive `/admin/stats` endpoint with 15+ metrics
+- **Design:** Wozber-style minimalist cards with gradient accents
+
+**Access:**
+- Admin-only route: `/admin`
+- Role-based authentication with JWT
+- Create admin user: `python create_admin.py`
+
+---
+
 ## Technology Stack
 
 ### Frontend
@@ -184,16 +243,16 @@ Chunking Strategy:
 ```javascript
 Core Libraries:
   - React 18.2.0 (hooks, context API)
-  - Material-UI v5 (components, theming)
-  - React Router v6 (client-side routing)
-  - Axios 1.4.0 (HTTP client with JWT)
-  - Recharts 2.5.0 (data visualization)
-  - OGL (WebGL library for Aurora)
+  - Material-UI v5.14.19 (components, theming)
+  - React Router v6.20.1 (client-side routing)
+  - Axios 1.6.2 (HTTP client with JWT)
+  - Recharts 2.10.3 (data visualization)
+  - OGL 1.0.11 (WebGL library for Aurora)
 
 Aurora Effect Implementation:
   - Technology: WebGL shaders (vertex + fragment)
   - Library: OGL (7KB, GPU-accelerated)
-  - Color Scheme: Red (#dc2626) → Orange (#f59e0b) → Black (#000000)
+  - Color Scheme: Purple (#8b5cf6) → Blue (#3b82f6) → Green (#10b981)
   - Performance: 60 FPS at 1080p
   - Configuration:
     * Amplitude: 1.5
@@ -202,10 +261,12 @@ Aurora Effect Implementation:
     * Noise: Simplex noise algorithm
 
 UI Features:
-  - Glassmorphism: rgba backgrounds + backdrop-filter blur
-  - Dark Theme: Pure black (#000000) with red/orange accents
+  - Wozber-Style Design: Clean white cards with subtle shadows
+  - Light Theme: Light gray (#F9FAFB) background with indigo/cyan accents
   - Protected Routes: JWT-based authentication guards
   - Responsive Design: Mobile-first with MUI breakpoints
+  - Custom Fonts: Poppins (primary), Inter, Space Grotesk (headings)
+  - Premium Formatting: Markdown-style AI responses with typography hierarchy
 ```
 
 **Aurora Technical Details:**
@@ -232,25 +293,31 @@ void main() {
 
 ```python
 Core Framework:
-  - FastAPI 0.104.1 (async ASGI)
-  - Uvicorn 0.24.0 (ASGI server)
-  - Pydantic 2.5.0 (data validation)
+  - FastAPI 0.116.1 (async ASGI)
+  - Uvicorn 0.35.0 (ASGI server)
+  - Pydantic 2.11.7 (data validation)
 
 Authentication:
-  - python-jose 3.3.0 (JWT tokens)
+  - python-jose 3.5.0 (JWT tokens)
   - passlib 1.7.4 (bcrypt hashing)
   - Google OAuth 2.0 (SSO)
 
 Database:
-  - SQLAlchemy 2.0.23 (ORM)
+  - SQLAlchemy 2.0.43 (ORM)
   - SQLite 3 (file-based, zero configuration)
 
 API Features:
-  - RESTful endpoints (/api/cv/*, /api/rag/*)
-  - WebSocket support (/ws/chat)
+  - RESTful endpoints (/analyze_resume/, /rag-coach/*, /admin/*)
+  - Admin dashboard with comprehensive analytics
+  - Role-based access control (user/admin)
   - CORS enabled (localhost:3000, localhost:8501)
   - Lazy model loading (background threads)
   - Comprehensive logging
+
+Additional Features:
+  - Admin Dashboard: User analytics, retention metrics, engagement tracking
+  - History Tracking: Resume analyses, career queries, RAG interactions
+  - User Management: Suspend, activate, delete users (admin only)
 ```
 
 ---
@@ -260,10 +327,11 @@ API Features:
 **LLMs:**
 ```
 1. Google Gemini Pro (API)
-   - Purpose: Skill extraction, ATS feedback
+   - Purpose: Skill extraction, ATS feedback, RAG fallback
    - Model: gemini-1.5-pro
    - Context Window: 32k tokens
    - Temperature: 0.3 (consistent outputs)
+   - Fallback: Regex-based extraction (100+ patterns)
 
 2. GPT-2 Medium (Fine-tuned)
    - Purpose: Career advice generation
@@ -271,6 +339,7 @@ API Features:
    - Size: 1.5GB
    - Training: 749 examples, 15 epochs
    - Format: PyTorch (HuggingFace)
+   - Fallback: RAG over career guides
 
 3. TinyLLama 1.1B (RAG)
    - Purpose: Document Q&A
@@ -278,7 +347,7 @@ API Features:
    - Quantization: Q4_K_M (4-bit)
    - Memory: ~4GB RAM
    - Inference: CPU-friendly (~50 tokens/sec)
-   - Privacy: 100% local execution
+   - Privacy: 100% local execution via Ollama
 ```
 
 **ML Models:**
@@ -291,22 +360,26 @@ Job Classification:
   - Inference Time: <10ms
   - Model Size: 450KB
 
-  Categories (10 groups):
+  Categories (12 groups):
     • Data Professional
     • Software Developer
     • IT Operations & Infrastructure
-    • Project/Product Manager
-    • QA/Test Engineer
+    • Project / Product Manager
+    • QA / Test Engineer
     • Human Resources
     • Sales & Business Development
-    • Administrative & Support
-    • Technical Writer
+    • Marketing
+    • UI/UX & Design
+    • Finance & Accounting
+    • Customer Support
     • Other
 
   Hyperparameters (GridSearchCV):
-    • Vectorizer: TfidfVectorizer(max_features=500)
-    • Classifier: MultinomialNB(alpha=1.0)
+    • Vectorizer: TfidfVectorizer(ngram_range=(1,2))
+    • Classifier: MultinomialNB(alpha=0.1-1.0) OR LogisticRegression
     • Train/Test Split: 80/20
+    • CV Folds: 5
+    • Scoring: F1 Weighted
 ```
 
 **RAG System:**
@@ -789,14 +862,18 @@ python ingest_guides.py
 # Download from https://ollama.ai
 ollama pull tinyllama
 
-# 8. Start backend
+# 8. Create admin user (optional)
+python create_admin.py
+# Default credentials: admin@gmail.com / admin
+
+# 9. Start backend
 python -m uvicorn backend_api:app --reload
 
-# 9. Start frontend (new terminal)
+# 10. Start frontend (new terminal)
 # Option A: React (modern UI with Aurora)
-cd frontend && npm install && npm run dev
+cd frontend && npm install && npm start
 
-# Option B: Streamlit (simple UI)
+# Option B: Streamlit (simple UI - legacy)
 streamlit run app.py
 ```
 
@@ -815,11 +892,13 @@ npm run dev
 ```
 
 **React Frontend Features:**
-- 🌙 Dark theme with glassmorphism
-- ⚡ Aurora WebGL background (GPU-accelerated)
+- ☀️ Wozber-style light theme with clean white cards
+- ⚡ Aurora WebGL background (GPU-accelerated, purple/blue/green)
 - 🔐 JWT authentication with protected routes
 - 📱 Mobile-responsive Material-UI components
-- 🎨 Red/Orange color scheme
+- 🎨 Indigo/Cyan color scheme with Poppins font
+- 📊 Admin dashboard with comprehensive visualizations
+- ✨ Premium markdown-style AI response formatting
 
 ---
 
@@ -868,7 +947,7 @@ The system will automatically fall back to the RAG system if the fine-tuned mode
 
 ### Using CV Analyzer
 
-1. Navigate to "Resume Analyzer" tab
+1. Navigate to "CV Analyzer" page
 2. Upload resume (PDF/DOCX)
 3. Wait 8-12 seconds for analysis
 4. Review:
@@ -878,24 +957,53 @@ The system will automatically fall back to the RAG system if the fine-tuned mode
    - Live LinkedIn jobs
    - ATS feedback
 
+### Using Resume Analyzer with JD
+
+1. Navigate to "Resume Analyzer (with Job Description)" page
+2. Upload both resume and job description (PDF/DOCX)
+3. Wait 10-15 seconds for analysis
+4. Review:
+   - ATS compatibility score with gradient bar
+   - Matching skills (green cards)
+   - Missing skills with YouTube links (red cards)
+   - ATS optimization tips (blue card)
+   - All detected skills (purple card)
+
 ### Using AI Career Advisor
 
-1. Navigate to "AI Career Advisor" tab
+1. Navigate to "AI Career Advisor" page
 2. Ask question (e.g., "Tell me about Data Science")
 3. Adjust temperature (0.1-1.0) and length (50-120)
 4. Click "Get AI Advice"
-5. Review structured response + live jobs
+5. Review premium-formatted response with:
+   - Headers (###, ####)
+   - Bullet points with custom markers
+   - Bold/italic text
+   - Purple accent colors
 
 ### Using RAG Coach
 
-1. Navigate to "RAG Coach" tab
+1. Navigate to "RAG Coach" page
 2. Upload resume.pdf + job_description.pdf
 3. Wait for auto-analysis (~5-10 seconds)
 4. Review:
-   - Skills to add
+   - Skills to add (normalized)
    - Resume bullet points
    - ATS keywords
-5. Ask follow-up questions
+5. Ask follow-up questions with context-aware answers
+
+### Using Admin Dashboard (Admin Only)
+
+1. Login with admin credentials (admin@gmail.com / admin)
+2. Click "Features" → "Admin Panel"
+3. View comprehensive analytics:
+   - KPI cards (users, analyses, retention)
+   - User growth chart (30 days)
+   - Top jobs and missing skills bar charts
+   - Match score distribution pie chart
+   - Recent activity feed
+   - Retention metrics display
+4. Manage users (view, suspend, activate, delete)
 
 ---
 
@@ -987,6 +1095,33 @@ Content-Type: application/json
 }
 ```
 
+### Resume + JD Analysis
+
+```bash
+POST /analyze_resume_with_jd/
+Content-Type: multipart/form-data
+
+curl -X POST http://localhost:8000/analyze_resume_with_jd/ \
+  -F "resume=@resume.pdf" \
+  -F "job_description=@jd.pdf" \
+  -H "Authorization: Bearer TOKEN"
+```
+
+**Response:**
+```json
+{
+  "resume_skills": ["python", "django", "react"],
+  "jd_skills": ["python", "django", "react", "docker", "kubernetes"],
+  "matching_skills": ["python", "django", "react"],
+  "missing_skills": ["docker", "kubernetes"],
+  "ats_score": 60.0,
+  "missing_skills_with_links": [
+    {"skill_name": "docker", "youtube_link": "https://..."}
+  ],
+  "layout_feedback": "✅ Skills section is ATS-friendly..."
+}
+```
+
 ### History
 
 ```bash
@@ -1001,6 +1136,52 @@ Authorization: Bearer TOKEN
 # RAG interactions
 GET /history/rag-queries
 Authorization: Bearer TOKEN
+```
+
+### Admin Dashboard
+
+```bash
+# Get comprehensive statistics (admin only)
+GET /admin/stats
+Authorization: Bearer ADMIN_TOKEN
+
+# Get all users with pagination
+GET /admin/users?skip=0&limit=50
+Authorization: Bearer ADMIN_TOKEN
+
+# Suspend user
+PUT /admin/user/{user_id}/suspend
+Authorization: Bearer ADMIN_TOKEN
+
+# Activate user
+PUT /admin/user/{user_id}/activate
+Authorization: Bearer ADMIN_TOKEN
+
+# Delete user
+DELETE /admin/user/{user_id}
+Authorization: Bearer ADMIN_TOKEN
+```
+
+**Admin Stats Response:**
+```json
+{
+  "total_users": 150,
+  "active_users_30days": 85,
+  "active_users_7days": 42,
+  "new_users_7days": 12,
+  "total_analyses": 450,
+  "analyses_7days": 67,
+  "avg_match_percentage": 72.3,
+  "retention_rate": 0.567,
+  "retention_7days": 0.714,
+  "retention_30days": 0.589,
+  "user_growth": [{"date": "2024-11-01", "count": 138}, ...],
+  "top_jobs": [{"job": "Software Developer", "count": 89}, ...],
+  "top_missing_skills": [{"skill": "docker", "count": 45}, ...],
+  "match_distribution": [65.2, 78.5, 82.1, ...],
+  "recent_activity": [{"type": "analysis", "user": "user@email.com", ...}],
+  "activity_heatmap": [{"day": "Monday", "hour": 14, "count": 23}, ...]
+}
 ```
 
 ---
@@ -1064,11 +1245,22 @@ sqlite3 nextstepai.db ".backup nextstepai_backup.db"
 
 **Database Schema:**
 ```python
-# Tables created by SQLAlchemy:
-- users (id, email, full_name, created_at)
-- resume_analyses (id, owner_id, job_title, match_percentage, skills_to_add, created_at)
-- career_queries (id, owner_id, query_text, matched_job_group, created_at)
-- rag_coach_queries (id, owner_id, question, answer, sources, created_at)
+# Tables created by SQLAlchemy (models.py):
+- users
+  * id, email, full_name, password_hash
+  * role (user/admin), is_active, created_at, last_active
+  
+- resume_analyses
+  * id, owner_id, recommended_job_title, match_percentage
+  * skills_to_add, resume_filename, total_skills_count, created_at
+  
+- career_queries
+  * id, owner_id, user_query_text, matched_job_group
+  * model_used (finetuned/rag), response_time_seconds, created_at
+  
+- rag_coach_queries
+  * id, owner_id, question, answer, sources
+  * query_length, answer_length, created_at
 ```
 
 ### Production Checklist
@@ -1141,6 +1333,79 @@ curl -X POST http://localhost:8000/rag-coach/build-index
 - Use quantized models
 
 ---
+
+## Project Structure
+
+```
+NextStepAI/
+├── backend_api.py              # Main FastAPI application (2897 lines)
+├── models.py                   # SQLAlchemy database models
+├── model_training.py           # ML model training script (Naive Bayes)
+├── production_finetuning_optimized.py  # GPT-2 fine-tuning script
+├── create_admin.py             # Admin user creation utility
+├── requirements.txt            # Python dependencies (191 packages)
+├── nextstepai.db              # SQLite database (auto-created)
+│
+├── Data Files/
+│   ├── jobs_cleaned.csv           # 8000+ job-skill mappings
+│   ├── skills_db.json             # 10,000+ validated skills
+│   ├── career_advice_dataset.jsonl     # 749 career Q&A pairs
+│   ├── youtube_links.json         # Skill → YouTube tutorial mapping
+│   ├── job_postings_new.json      # Scraped job postings
+│   └── career_guides.json         # Career advice guides for RAG
+│
+├── Model Artifacts/
+│   ├── job_recommender_pipeline.joblib   # TF-IDF + Naive Bayes
+│   ├── job_title_encoder.joblib          # Label encoder
+│   ├── prioritized_skills.joblib         # Job → top skills mapping
+│   ├── master_skill_vocab.joblib         # Complete skill vocabulary
+│   └── career-advisor-final/             # Fine-tuned GPT-2 (1.5GB)
+│       ├── model.safetensors
+│       ├── config.json
+│       └── tokenizer files
+│
+├── Vector Stores/
+│   ├── rag_coach_index/           # FAISS index for uploaded docs
+│   ├── jobs_index/                # Job postings embeddings
+│   └── guides_index/              # Career guides embeddings
+│
+├── frontend/                      # React 18 application
+│   ├── package.json               # 13 dependencies
+│   ├── public/
+│   │   └── index.html
+│   ├── src/
+│   │   ├── App.js                 # Router configuration
+│   │   ├── index.css              # Global styles (Wozber theme)
+│   │   ├── theme.js               # Material-UI theme
+│   │   ├── components/
+│   │   │   ├── Layout.js          # Header + navigation
+│   │   │   ├── Aurora.js          # WebGL background
+│   │   │   └── ProtectedRoute.js  # Auth guard
+│   │   ├── contexts/
+│   │   │   └── AuthContext.js     # JWT state management
+│   │   ├── pages/
+│   │   │   ├── Dashboard.js       # Home page
+│   │   │   ├── CVAnalyzer.js      # Resume analysis
+│   │   │   ├── ResumeAnalyzer.js  # Resume + JD matching
+│   │   │   ├── CareerAdvisor.js   # AI chat
+│   │   │   ├── RAGCoach.js        # Document Q&A
+│   │   │   ├── AdminDashboard.js  # Analytics (600+ lines)
+│   │   │   ├── History.js         # User history
+│   │   │   ├── Login.js
+│   │   │   └── Register.js
+│   │   └── services/
+│   │       └── api.js             # Axios API client
+│   └── build/                     # Production build
+│
+└── uploads/
+    └── processed/                 # Temporary uploaded files
+
+Key Files Overview:
+- backend_api.py: 22 endpoints (auth, CV analysis, RAG, admin)
+- models.py: 4 database tables with relationships
+- model_training.py: GridSearchCV, confusion matrix, artifact generation
+- AdminDashboard.js: 8+ visualizations with Recharts
+```
 
 ## Contributing
 
